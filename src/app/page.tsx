@@ -3,6 +3,7 @@ import { Container } from "@/components/layout/container";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
 import { LeadForm } from "@/components/lead-form";
+import { MobileStickyCta } from "@/components/mobile-sticky-cta";
 import {
   ArrowRightIcon,
   CheckIcon,
@@ -14,17 +15,17 @@ import {
 } from "@/components/ui/icons";
 
 export const metadata: Metadata = {
-  title: "Assurance dentaire en Suisse | Trouvez une couverture adaptée",
+  title: "Assurance dentaire Suisse | Comparer les couvertures",
   description:
-    "Comprenez et comparez les assurances dentaires en Suisse. Recevez une orientation personnalisée et sans engagement pour adultes et enfants.",
+    "Comparez les critères des assurances dentaires en Suisse. Recevez gratuitement une analyse personnalisée pour adulte, enfant ou famille.",
 };
 
 const benefits = [
   {
     icon: ShieldIcon,
-    title: "Une lecture indépendante",
+    title: "Une analyse structurée",
     description:
-      "Nous clarifions les prestations, exclusions, délais d’attente et plafonds avant toute décision.",
+      "Nous passons en revue prestations, exclusions, délais d’attente et plafonds avant toute décision.",
   },
   {
     icon: ToothIcon,
@@ -45,7 +46,7 @@ const steps = [
     number: "01",
     title: "Décrivez votre besoin",
     description:
-      "Adulte ou enfant, canton, type de soins recherché : le formulaire prend environ deux minutes.",
+      "Adulte ou enfant, canton et priorité : le formulaire prend environ une minute.",
   },
   {
     number: "02",
@@ -99,24 +100,35 @@ const faqs = [
 ];
 
 export default function Home() {
+  const faqStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((faq) => ({
+      "@type": "Question",
+      name: faq.question,
+      acceptedAnswer: { "@type": "Answer", text: faq.answer },
+    })),
+  };
+
   return (
     <>
+      <a href="#contenu" className="skip-link">Aller au contenu</a>
       <Header />
-      <main>
-        <section className="relative isolate overflow-hidden bg-[#f3f7f4] pb-20 pt-10 sm:pb-28 sm:pt-16 lg:pb-32 lg:pt-20">
+      <main id="contenu">
+        <section className="relative isolate overflow-hidden bg-[#f3f7f4] pb-16 pt-8 sm:pb-24 sm:pt-14 lg:pb-28 lg:pt-16">
           <div className="hero-grid absolute inset-0 -z-20 opacity-55" />
           <div className="absolute -left-48 top-20 -z-10 h-96 w-96 rounded-full bg-emerald-200/45 blur-3xl" />
           <div className="absolute -right-40 bottom-0 -z-10 h-[32rem] w-[32rem] rounded-full bg-orange-100/70 blur-3xl" />
-          <Container className="grid items-center gap-12 lg:grid-cols-[1.08fr_0.92fr] lg:gap-16">
-            <div className="max-w-3xl">
-              <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-emerald-900/10 bg-white/80 px-3.5 py-2 text-sm font-semibold text-emerald-950 shadow-sm backdrop-blur">
+          <Container className="grid items-center gap-10 lg:grid-cols-[1.04fr_0.96fr] lg:gap-14">
+            <div className="hero-enter max-w-3xl">
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-900/10 bg-white/80 px-3.5 py-2 text-sm font-semibold text-emerald-950 shadow-sm backdrop-blur">
                 <SparklesIcon className="h-4 w-4 text-[#f36f38]" />
-                La bonne couverture commence par les bonnes questions
+                Comparaison et conseil pour toute la Suisse
               </div>
-              <h1 className="text-balance font-display text-[2.7rem] font-semibold leading-[1.04] tracking-[-0.045em] text-[#102d28] sm:text-6xl lg:text-[4.55rem]">
-                Protégez votre sourire,
+              <h1 className="text-balance font-display text-[2.65rem] font-semibold leading-[1.04] tracking-[-0.045em] text-[#102d28] sm:text-6xl lg:text-[4.2rem]">
+                Assurance dentaire en Suisse :
                 <span className="relative block text-[#19715e]">
-                  sans payer à l’aveugle.
+                  trouvez la bonne couverture.
                   <svg
                     aria-hidden="true"
                     className="absolute -bottom-2 left-0 h-3 w-[76%] text-[#f36f38]/80"
@@ -127,26 +139,24 @@ export default function Home() {
                   </svg>
                 </span>
               </h1>
-              <p className="mt-8 max-w-2xl text-lg leading-8 text-slate-600 sm:text-xl sm:leading-9">
-                Comprenez les assurances dentaires suisses et trouvez une
-                couverture adaptée à votre famille, avec une orientation claire,
-                humaine et sans engagement.
+              <p className="mt-7 max-w-2xl text-lg leading-8 text-slate-600 sm:text-xl sm:leading-9">
+                Comparez les critères qui font vraiment la différence et recevez une analyse personnalisée pour vous, votre enfant ou votre famille.
               </p>
-              <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <a
                   href="#estimation"
-                  className="group inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-[#176654] px-7 text-base font-bold text-white shadow-[0_12px_30px_rgba(23,102,84,0.24)] transition hover:-translate-y-0.5 hover:bg-[#0f5747] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#176654]"
+                  className="primary-button group min-h-14 px-7 text-base shadow-[0_12px_30px_rgba(23,102,84,0.24)]"
                 >
-                  Obtenir mon orientation
+                  Comparer les couvertures
                   <ArrowRightIcon className="h-4 w-4 transition group-hover:translate-x-1" />
                 </a>
                 <span className="inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 sm:justify-start">
                   <CheckIcon className="h-4 w-4 text-[#19715e]" />
-                  Gratuit · Sans engagement
+                  Gratuit · 60 secondes · Sans engagement
                 </span>
               </div>
               <div className="mt-10 grid max-w-2xl grid-cols-1 gap-3 border-t border-emerald-950/10 pt-6 sm:grid-cols-3">
-                {["Pour adultes et enfants", "Partout en Suisse", "Réponse personnalisée"].map((item) => (
+                {["Adultes, enfants et familles", "Tous les cantons", "Réponse personnalisée"].map((item) => (
                   <div key={item} className="flex items-center gap-2 text-sm font-semibold text-[#284a43]">
                     <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100">
                       <CheckIcon className="h-3 w-3 text-[#176654]" />
@@ -157,7 +167,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div id="estimation" className="scroll-mt-24 lg:pl-2">
+            <div id="estimation" className="hero-form-enter scroll-mt-24 lg:pl-2">
               <LeadForm />
             </div>
           </Container>
@@ -165,11 +175,11 @@ export default function Home() {
 
         <section className="border-y border-slate-200/80 bg-white py-6" aria-label="Engagements">
           <Container className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4 text-sm font-semibold text-slate-600 sm:justify-between">
-            <span className="text-xs uppercase tracking-[0.2em] text-slate-400">Une démarche</span>
+            <span className="text-xs uppercase tracking-[0.2em] text-slate-400">Vos garanties</span>
             <span className="flex items-center gap-2"><ShieldIcon className="h-4 w-4 text-[#19715e]" /> Confidentielle</span>
             <span className="flex items-center gap-2"><HeartIcon className="h-4 w-4 text-[#19715e]" /> Humaine</span>
             <span className="flex items-center gap-2"><SparklesIcon className="h-4 w-4 text-[#19715e]" /> Sans jargon</span>
-            <span className="hidden text-slate-400 md:inline">Un service proposé par VYDA SA</span>
+            <span className="hidden text-slate-400 md:inline">Service suisse proposé par VYDA SA</span>
           </Container>
         </section>
 
@@ -177,10 +187,11 @@ export default function Home() {
           <Container>
             <div className="mx-auto max-w-3xl text-center">
               <p className="eyebrow">Comprendre avant de choisir</p>
-              <h2 className="section-title mt-4">Une protection utile quand elle est bien comprise</h2>
+              <h2 className="section-title mt-4">Ne comparez pas seulement la prime.</h2>
               <p className="section-intro mx-auto mt-5">
-                En Suisse, les soins dentaires courants sont en principe exclus de l’assurance de base. Une complémentaire peut aider, mais ses conditions doivent être lues avec attention.
+                En Suisse, les soins dentaires courants ne sont en principe pas couverts par l’assurance de base. Une complémentaire peut aider, mais son plafond, son délai d’attente et ses exclusions déterminent sa valeur réelle.
               </p>
+              <a href="https://www.bag.admin.ch/fr/soins-dentaires" target="_blank" rel="noreferrer" className="mt-4 inline-flex text-sm font-semibold text-[#176654] underline decoration-emerald-200 decoration-2 underline-offset-4">Consulter la source officielle de l’OFSP</a>
             </div>
             <div className="mt-14 grid gap-5 md:grid-cols-3">
               {benefits.map(({ icon: Icon, title, description }) => (
@@ -205,7 +216,7 @@ export default function Home() {
                   Trois étapes pour y voir clair.
                 </h2>
                 <p className="mt-5 max-w-md text-lg leading-8 text-slate-300">
-                  Pas de comparateur opaque. Nous partons de votre situation et des détails du contrat qui influencent réellement votre couverture.
+                  Une démarche lisible : nous partons de votre besoin et des critères contractuels qui influencent réellement votre couverture.
                 </p>
               </div>
               <ol className="grid gap-4">
@@ -268,7 +279,7 @@ export default function Home() {
                   ))}
                 </ul>
                 <a href="#estimation" className="mt-9 inline-flex items-center gap-2 font-bold text-[#176654] underline decoration-[#f36f38] decoration-2 underline-offset-8">
-                  Examiner ma situation <ArrowRightIcon className="h-4 w-4" />
+                  Recevoir mon analyse gratuite <ArrowRightIcon className="h-4 w-4" />
                 </a>
               </div>
             </div>
@@ -278,19 +289,19 @@ export default function Home() {
         <section className="bg-white py-20 sm:py-28">
           <Container>
             <div className="rounded-[2rem] border border-slate-200 bg-white p-7 shadow-[0_25px_80px_rgba(16,45,40,0.08)] sm:p-12 lg:p-16">
-              <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
+              <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
                 <div>
                   <p className="eyebrow">Pour toute la famille</p>
                   <h2 className="section-title mt-4">Des besoins différents, une même exigence de clarté.</h2>
                 </div>
                 <div className="grid gap-5 sm:grid-cols-2">
                   <article className="rounded-3xl bg-[#f3f7f4] p-7">
-                    <span className="mb-5 block text-3xl" aria-hidden="true">🌱</span>
+                    <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[#176654]"><ToothIcon className="h-5 w-5" /></div>
                     <h3 className="text-xl font-bold text-[#102d28]">Enfants & adolescents</h3>
                     <p className="mt-3 leading-7 text-slate-600">Anticipez les besoins potentiels en orthodontie et vérifiez les conditions d’admission suffisamment tôt.</p>
                   </article>
                   <article className="rounded-3xl bg-[#fff4ef] p-7">
-                    <span className="mb-5 block text-3xl" aria-hidden="true">✨</span>
+                    <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[#f36f38]"><SparklesIcon className="h-5 w-5" /></div>
                     <h3 className="text-xl font-bold text-[#102d28]">Adultes</h3>
                     <p className="mt-3 leading-7 text-slate-600">Évaluez l’intérêt d’une couverture selon vos soins habituels, votre budget et les prestations réellement remboursées.</p>
                   </article>
@@ -307,7 +318,7 @@ export default function Home() {
               <h2 className="section-title mt-4">Les réponses essentielles.</h2>
               <p className="section-intro mt-5">Une question plus précise ? Décrivez-nous votre situation pour recevoir une première orientation.</p>
               <a href="#estimation" className="mt-7 inline-flex items-center gap-2 rounded-full border border-[#176654] px-5 py-3 text-sm font-bold text-[#176654] transition hover:bg-[#176654] hover:text-white">
-                Poser ma question <ArrowRightIcon className="h-4 w-4" />
+                Recevoir une réponse <ArrowRightIcon className="h-4 w-4" />
               </a>
             </div>
             <div className="divide-y divide-slate-200 border-y border-slate-200">
@@ -330,11 +341,11 @@ export default function Home() {
               <div className="absolute -left-20 -top-32 h-72 w-72 rounded-full border-[50px] border-white/[0.06]" />
               <div className="absolute -bottom-44 -right-16 h-80 w-80 rounded-full bg-[#f36f38]/25 blur-2xl" />
               <div className="relative mx-auto max-w-3xl">
-                <p className="text-sm font-bold uppercase tracking-[0.2em] text-emerald-100">Votre sourire mérite de la clarté</p>
-                <h2 className="mt-4 font-display text-4xl font-semibold tracking-[-0.035em] sm:text-5xl">Faites le point en quelques minutes.</h2>
-                <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-emerald-50/85">Recevez une première orientation gratuite, adaptée à votre situation et sans engagement.</p>
+                <p className="text-sm font-bold uppercase tracking-[0.2em] text-emerald-100">Décidez avec plus de clarté</p>
+                <h2 className="mt-4 font-display text-4xl font-semibold tracking-[-0.035em] sm:text-5xl">Trouvez vos options en 60 secondes.</h2>
+                <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-emerald-50/85">Une analyse gratuite, adaptée à votre situation et sans engagement.</p>
                 <a href="#estimation" className="group mt-8 inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-white px-7 font-bold text-[#176654] shadow-xl transition hover:-translate-y-0.5">
-                  Commencer maintenant <ArrowRightIcon className="h-4 w-4 transition group-hover:translate-x-1" />
+                  Comparer maintenant <ArrowRightIcon className="h-4 w-4 transition group-hover:translate-x-1" />
                 </a>
               </div>
             </div>
@@ -342,6 +353,8 @@ export default function Home() {
         </section>
       </main>
       <Footer />
+      <MobileStickyCta />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqStructuredData) }} />
     </>
   );
 }

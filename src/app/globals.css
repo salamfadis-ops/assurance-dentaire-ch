@@ -24,7 +24,14 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  padding-bottom: 4.75rem;
   text-rendering: optimizeLegibility;
+}
+
+@media (min-width: 640px) {
+  body {
+    padding-bottom: 0;
+  }
 }
 
 ::selection {
@@ -43,6 +50,83 @@ button,
 summary,
 select {
   cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid #176654;
+  outline-offset: 3px;
+}
+
+.skip-link {
+  position: fixed;
+  left: 1rem;
+  top: -5rem;
+  z-index: 100;
+  border-radius: 999px;
+  background: #102d28;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 700;
+  padding: 0.75rem 1rem;
+  transition: top 160ms ease;
+}
+
+.skip-link:focus {
+  top: 1rem;
+}
+
+.primary-button {
+  align-items: center;
+  background: #176654;
+  border-radius: 999px;
+  color: white;
+  display: inline-flex;
+  font-weight: 700;
+  gap: 0.5rem;
+  justify-content: center;
+  min-height: 3rem;
+  padding: 0.75rem 1.25rem;
+  transition: background-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.primary-button:hover {
+  background: #0f5747;
+  box-shadow: 0 12px 28px rgba(23, 102, 84, 0.2);
+  transform: translateY(-1px);
+}
+
+.form-card {
+  background: white;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 1.75rem;
+  box-shadow: 0 28px 80px rgba(16, 45, 40, 0.16);
+  min-height: 31rem;
+  padding: 1.5rem;
+}
+
+.form-control {
+  background: white;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.75rem;
+  color: #334155;
+  font-size: 1rem;
+  font-weight: 400;
+  min-height: 3rem;
+  outline: none;
+  padding: 0.65rem 0.9rem;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+  width: 100%;
+}
+
+.form-control:focus {
+  border-color: #176654;
+  box-shadow: 0 0 0 3px rgba(23, 102, 84, 0.12);
+}
+
+@media (min-width: 640px) {
+  .form-card {
+    padding: 2rem;
+  }
 }
 
 .hero-grid {
@@ -72,10 +156,29 @@ select {
 }
 
 .section-intro {
-  color: #64748b;
+  color: #526173;
   font-size: 1.08rem;
   line-height: 1.8;
   max-width: 44rem;
+}
+
+@keyframes enter-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-enter {
+  animation: enter-up 520ms ease-out both;
+}
+
+.hero-form-enter {
+  animation: enter-up 520ms 100ms ease-out both;
 }
 
 @media (prefers-reduced-motion: reduce) {

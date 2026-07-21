@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { GoogleAds } from "@/components/google-ads";
 import "./globals.css";
 
 const siteUrl = "https://assurance-dentaire.ch";
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
     template: "%s | assurance-dentaire.ch",
   },
   description:
-    "Comprenez et comparez les assurances dentaires en Suisse. Orientation personnalisée, gratuite et sans engagement.",
+    "Comparez les critères des assurances dentaires en Suisse. Analyse personnalisée, gratuite et sans engagement pour adultes et enfants.",
   applicationName: "assurance-dentaire.ch",
   authors: [{ name: "VYDA SA" }],
   creator: "VYDA SA",
@@ -21,14 +22,14 @@ export const metadata: Metadata = {
     locale: "fr_CH",
     url: siteUrl,
     siteName: "assurance-dentaire.ch",
-    title: "Assurance dentaire en Suisse, enfin claire",
+    title: "Assurance dentaire en Suisse | Comparez les couvertures",
     description:
-      "Recevez une orientation personnalisée pour trouver une couverture dentaire adaptée à votre famille.",
+      "Recevez une analyse personnalisée pour trouver une couverture dentaire adaptée à votre famille.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Assurance dentaire en Suisse, enfin claire",
-    description: "Une orientation personnalisée, gratuite et sans engagement.",
+    title: "Assurance dentaire en Suisse | Comparez les couvertures",
+    description: "Une analyse personnalisée, gratuite et sans engagement.",
   },
   robots: { index: true, follow: true },
 };
@@ -57,6 +58,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="fr-CH" className="h-full antialiased">
       <body className="flex min-h-full flex-col">
         {children}
+        <GoogleAds />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}

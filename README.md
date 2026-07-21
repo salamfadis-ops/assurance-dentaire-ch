@@ -28,4 +28,11 @@ pnpm build
 
 ## Formulaire
 
-La V1 ne conserve aucune donnée côté serveur. Après validation, le formulaire prépare un e-mail adressé à `contact@assurance-dentaire.ch` dans la messagerie de l’utilisateur. Une intégration CRM ou webhook pourra remplacer ce mécanisme sans modifier l’interface du parcours.
+Le formulaire envoie les demandes via l’API serveur `/api/leads`. Deux modes de livraison sont prévus :
+
+- Resend avec `RESEND_API_KEY` ;
+- un webhook CRM avec `LEADS_WEBHOOK_URL`.
+
+Copier `.env.example` vers `.env.local` et renseigner au moins une méthode avant la mise en production. Sans configuration, les données sont masquées et journalisées uniquement en développement ; la production renvoie une erreur explicite plutôt que de perdre silencieusement un lead.
+
+L’attribution UTM est conservée avec la demande. Le suivi Google Ads et son consentement peuvent être activés avec `NEXT_PUBLIC_GOOGLE_ADS_ID` et `NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_TARGET`.

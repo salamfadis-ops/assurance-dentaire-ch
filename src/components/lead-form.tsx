@@ -1,143 +1,203 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { ArrowRightIcon, CheckIcon, ShieldIcon } from "@/components/ui/icons";
 
 type FormData = {
   profile: string;
-  canton: string;
   need: string;
+  canton: string;
   firstName: string;
   email: string;
   phone: string;
+  consent: boolean;
+  website: string;
 };
+
+type Attribution = {
+  source?: string;
+  medium?: string;
+  campaign?: string;
+  term?: string;
+  landingPage?: string;
+};
+
+declare global {
+  interface Window {
+    gtag?: (...args: unknown[]) => void;
+  }
+}
 
 const initialData: FormData = {
   profile: "",
-  canton: "",
   need: "",
+  canton: "",
   firstName: "",
   email: "",
   phone: "",
+  consent: false,
+  website: "",
 };
 
 const cantons = ["AG", "AI", "AR", "BE", "BL", "BS", "FR", "GE", "GL", "GR", "JU", "LU", "NE", "NW", "OW", "SG", "SH", "SO", "SZ", "TG", "TI", "UR", "VD", "VS", "ZG", "ZH"];
+const profiles = ["Un enfant", "Un adulte", "Toute la famille"];
+const needs = ["Orthodontie", "Soins courants", "Couverture complète", "Je souhaite être conseillé"];
 
 export function LeadForm() {
   const [step, setStep] = useState(1);
   const [data, setData] = useState<FormData>(initialData);
-  const [sent, setSent] = useState(false);
+  const attributionRef = useRef<Attribution>({});
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [error, setError] = useState("");
 
-  const update = (field: keyof FormData, value: string) => setData((current) => ({ ...current, [field]: value }));
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    attributionRef.current = {
+      source: params.get("utm_source") ?? undefined,
+      medium: params.get("utm_medium") ?? undefined,
+      campaign: params.get("utm_campaign") ?? undefined,
+      term: params.get("utm_term") ?? undefined,
+      landingPage: window.location.href,
+    };
+  }, []);
 
-  function next() {
-    if (step === 1 && data.profile) setStep(2);
-    if (step === 2 && data.canton && data.need) setStep(3);
+  const update = <K extends keyof FormData>(field: K, value: FormData[K]) => {
+    setData((current) => ({ ...current, [field]: value }));
+    setError("");
+  };
+
+  function continueToContact() {
+    if (!data.profile || !data.need || !data.canton) {
+      setError("Complétez les trois réponses pour continuer.");
+      return;
+    }
+    setStep(2);
+    setError("");
   }
 
-  function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const subject = encodeURIComponent(`Demande d’orientation dentaire — ${data.firstName}`);
-    const body = encodeURIComponent([
-      "Bonjour,",
-      "",
-      "Je souhaite recevoir une orientation concernant une assurance dentaire.",
-      "",
-      `Profil : ${data.profile}`,
-      `Canton : ${data.canton}`,
-      `Besoin : ${data.need}`,
-      `Prénom : ${data.firstName}`,
-      `E-mail : ${data.email}`,
-      `Téléphone : ${data.phone || "Non renseigné"}`,
-      "",
-      "Merci de me recontacter.",
-    ].join("\n"));
-    setSent(true);
-    window.location.href = `mailto:contact@assurance-dentaire.ch?subject=${subject}&body=${body}`;
+    setError("");
+
+    if (!data.firstName || !data.email || !data.consent) {
+      setError("Renseignez votre prénom, votre e-mail et votre consentement.");
+      return;
+    }
+
+    setStatus("loading");
+    try {
+      const response = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...data, attribution: attributionRef.current }),
+      });
+
+      if (!response.ok) throw new Error("submission_failed");
+
+      setStatus("success");
+      window.gtag?.("event", "generate_lead", {
+        lead_type: data.profile,
+        lead_need: data.need,
+        lead_canton: data.canton,
+      });
+      const conversionTarget = process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_TARGET;
+      if (conversionTarget) {
+        window.gtag?.("event", "conversion", { send_to: conversionTarget });
+      }
+    } catch {
+      setStatus("error");
+      setError("La demande n’a pas pu être envoyée. Réessayez ou contactez-nous directement par e-mail.");
+    }
   }
 
-  if (sent) {
+  if (status === "success") {
     return (
-      <div className="rounded-[1.75rem] border border-white/80 bg-white p-7 shadow-[0_28px_80px_rgba(16,45,40,0.16)] sm:p-8">
+      <div className="form-card" role="status" aria-live="polite">
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#e3f1ec] text-[#176654]"><CheckIcon className="h-7 w-7" /></div>
-        <h2 className="mt-6 text-2xl font-bold tracking-tight text-[#102d28]">Votre demande est prête</h2>
-        <p className="mt-3 leading-7 text-slate-600">Votre messagerie s’est ouverte avec un message prérempli. Envoyez-le pour transmettre votre demande à VYDA SA.</p>
-        <button type="button" onClick={() => setSent(false)} className="mt-6 text-sm font-bold text-[#176654] underline underline-offset-4">Revenir au formulaire</button>
+        <p className="mt-6 text-xs font-bold uppercase tracking-[0.18em] text-[#19715e]">Demande envoyée</p>
+        <h2 className="mt-2 text-2xl font-bold tracking-tight text-[#102d28]">Merci {data.firstName}, nous avons bien reçu votre demande.</h2>
+        <p className="mt-3 leading-7 text-slate-600">Un conseiller VYDA examinera votre situation et vous répondra personnellement.</p>
+        <div className="mt-6 rounded-2xl bg-[#f3f7f4] p-4 text-sm leading-6 text-[#29423d]">
+          <strong>Prochaine étape :</strong> surveillez votre boîte e-mail et vos courriers indésirables.
+        </div>
       </div>
     );
   }
 
   return (
-    <form onSubmit={submit} className="rounded-[1.75rem] border border-white/80 bg-white p-6 shadow-[0_28px_80px_rgba(16,45,40,0.16)] sm:p-8">
+    <form onSubmit={submit} className="form-card" noValidate>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#19715e]">Orientation gratuite</p>
-          <h2 className="mt-2 text-2xl font-bold tracking-tight text-[#102d28]">Quel est votre besoin ?</h2>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#19715e]">Analyse gratuite</p>
+          <h2 className="mt-2 text-2xl font-bold tracking-tight text-[#102d28]">Recevez vos pistes personnalisées</h2>
         </div>
-        <span className="rounded-full bg-[#f3f7f4] px-3 py-1.5 text-xs font-bold text-slate-500">Étape {step}/3</span>
+        <span className="shrink-0 rounded-full bg-[#f3f7f4] px-3 py-1.5 text-xs font-bold text-slate-500">{step}/2</span>
       </div>
+      <p className="mt-3 text-sm leading-6 text-slate-500">60 secondes suffisent. Aucun engagement.</p>
       <div className="mt-5 flex gap-2" aria-hidden="true">
-        {[1, 2, 3].map((item) => <span key={item} className={`h-1.5 flex-1 rounded-full ${item <= step ? "bg-[#176654]" : "bg-slate-100"}`} />)}
+        {[1, 2].map((item) => <span key={item} className={`h-1.5 flex-1 rounded-full transition-colors ${item <= step ? "bg-[#176654]" : "bg-slate-100"}`} />)}
       </div>
 
       {step === 1 && (
-        <fieldset className="mt-7">
-          <legend className="text-sm font-bold text-slate-700">Pour qui cherchez-vous une couverture ?</legend>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            {["Pour un enfant", "Pour un adulte", "Pour ma famille", "Je ne sais pas encore"].map((option) => (
-              <button key={option} type="button" onClick={() => update("profile", option)} className={`rounded-2xl border p-4 text-left text-sm font-semibold transition ${data.profile === option ? "border-[#176654] bg-[#edf6f2] text-[#125444] ring-1 ring-[#176654]" : "border-slate-200 text-slate-700 hover:border-emerald-700/40 hover:bg-slate-50"}`}>
-                {option}
-              </button>
-            ))}
+        <fieldset className="mt-6 grid gap-5">
+          <legend className="sr-only">Votre besoin d’assurance dentaire</legend>
+          <div>
+            <p className="text-sm font-bold text-slate-700">Qui souhaitez-vous assurer ?</p>
+            <div className="mt-2 grid grid-cols-3 gap-2">
+              {profiles.map((option) => (
+                <button key={option} type="button" aria-pressed={data.profile === option} onClick={() => update("profile", option)} className={`min-h-14 rounded-xl border px-2 py-2 text-center text-xs font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#176654] sm:text-sm ${data.profile === option ? "border-[#176654] bg-[#edf6f2] text-[#125444] ring-1 ring-[#176654]" : "border-slate-200 text-slate-600 hover:border-emerald-700/40 hover:bg-slate-50"}`}>
+                  {option}
+                </button>
+              ))}
+            </div>
           </div>
-          <button type="button" disabled={!data.profile} onClick={next} className="mt-6 flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#176654] px-5 font-bold text-white transition hover:bg-[#0f5747] disabled:cursor-not-allowed disabled:opacity-40">
-            Continuer <ArrowRightIcon className="h-4 w-4" />
+          <label className="grid gap-2 text-sm font-bold text-slate-700">
+            Quel est votre besoin principal ?
+            <select required value={data.need} onChange={(event) => update("need", event.target.value)} className="form-control">
+              <option value="">Choisir une réponse</option>
+              {needs.map((need) => <option key={need}>{need}</option>)}
+            </select>
+          </label>
+          <label className="grid gap-2 text-sm font-bold text-slate-700">
+            Dans quel canton résidez-vous ?
+            <select required value={data.canton} onChange={(event) => update("canton", event.target.value)} className="form-control">
+              <option value="">Choisir un canton</option>
+              {cantons.map((canton) => <option key={canton}>{canton}</option>)}
+            </select>
+          </label>
+          {error && <p className="text-sm font-semibold text-red-700" role="alert">{error}</p>}
+          <button type="button" onClick={continueToContact} className="primary-button w-full">
+            Voir mes options <ArrowRightIcon className="h-4 w-4" />
           </button>
         </fieldset>
       )}
 
       {step === 2 && (
-        <fieldset className="mt-7 grid gap-5">
-          <legend className="sr-only">Votre situation</legend>
-          <label className="grid gap-2 text-sm font-bold text-slate-700">
-            Votre canton
-            <select required value={data.canton} onChange={(event) => update("canton", event.target.value)} className="min-h-12 rounded-xl border border-slate-200 bg-white px-4 font-normal text-slate-700 outline-none transition focus:border-[#176654] focus:ring-2 focus:ring-emerald-100">
-              <option value="">Sélectionner</option>
-              {cantons.map((canton) => <option key={canton}>{canton}</option>)}
-            </select>
-          </label>
-          <label className="grid gap-2 text-sm font-bold text-slate-700">
-            Votre priorité
-            <select required value={data.need} onChange={(event) => update("need", event.target.value)} className="min-h-12 rounded-xl border border-slate-200 bg-white px-4 font-normal text-slate-700 outline-none transition focus:border-[#176654] focus:ring-2 focus:ring-emerald-100">
-              <option value="">Sélectionner</option>
-              <option>Orthodontie</option>
-              <option>Contrôles et soins courants</option>
-              <option>Couverture la plus complète</option>
-              <option>Comprendre mes options</option>
-            </select>
-          </label>
-          <div className="grid grid-cols-[auto_1fr] gap-3">
-            <button type="button" onClick={() => setStep(1)} className="min-h-12 rounded-full border border-slate-200 px-5 font-bold text-slate-600">Retour</button>
-            <button type="button" disabled={!data.canton || !data.need} onClick={next} className="flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#176654] px-5 font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">Continuer <ArrowRightIcon className="h-4 w-4" /></button>
-          </div>
-        </fieldset>
-      )}
-
-      {step === 3 && (
-        <fieldset className="mt-7 grid gap-4">
+        <fieldset className="mt-6 grid gap-4">
           <legend className="sr-only">Vos coordonnées</legend>
-          <label className="grid gap-2 text-sm font-bold text-slate-700">Prénom<input required autoComplete="given-name" value={data.firstName} onChange={(event) => update("firstName", event.target.value)} className="min-h-12 rounded-xl border border-slate-200 px-4 font-normal outline-none focus:border-[#176654] focus:ring-2 focus:ring-emerald-100" /></label>
-          <label className="grid gap-2 text-sm font-bold text-slate-700">E-mail<input required type="email" autoComplete="email" value={data.email} onChange={(event) => update("email", event.target.value)} className="min-h-12 rounded-xl border border-slate-200 px-4 font-normal outline-none focus:border-[#176654] focus:ring-2 focus:ring-emerald-100" /></label>
-          <label className="grid gap-2 text-sm font-bold text-slate-700">Téléphone <span className="font-normal text-slate-400">(facultatif)</span><input type="tel" autoComplete="tel" value={data.phone} onChange={(event) => update("phone", event.target.value)} className="min-h-12 rounded-xl border border-slate-200 px-4 font-normal outline-none focus:border-[#176654] focus:ring-2 focus:ring-emerald-100" /></label>
-          <label className="flex items-start gap-3 text-xs leading-5 text-slate-500"><input required type="checkbox" className="mt-1 h-4 w-4 rounded accent-[#176654]" />J’accepte que VYDA SA utilise ces informations pour répondre à ma demande, conformément à la politique de confidentialité.</label>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="grid gap-2 text-sm font-bold text-slate-700">Prénom<input required autoComplete="given-name" value={data.firstName} onChange={(event) => update("firstName", event.target.value)} className="form-control" /></label>
+            <label className="grid gap-2 text-sm font-bold text-slate-700">Téléphone <span className="sr-only">facultatif</span><input type="tel" autoComplete="tel" inputMode="tel" value={data.phone} onChange={(event) => update("phone", event.target.value)} placeholder="Facultatif" className="form-control" /></label>
+          </div>
+          <label className="grid gap-2 text-sm font-bold text-slate-700">E-mail<input required type="email" autoComplete="email" inputMode="email" value={data.email} onChange={(event) => update("email", event.target.value)} className="form-control" /></label>
+          <label className="absolute -left-[9999px]" aria-hidden="true">Votre site<input tabIndex={-1} autoComplete="off" value={data.website} onChange={(event) => update("website", event.target.value)} /></label>
+          <label className="flex items-start gap-3 text-xs leading-5 text-slate-500">
+            <input required type="checkbox" checked={data.consent} onChange={(event) => update("consent", event.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 rounded accent-[#176654]" />
+            <span>J’accepte d’être recontacté par VYDA SA au sujet de ma demande. <Link href="/confidentialite" className="font-semibold text-[#176654] underline underline-offset-2">Confidentialité</Link></span>
+          </label>
+          {error && <p className="text-sm font-semibold text-red-700" role="alert">{error} {status === "error" && <a href="mailto:contact@assurance-dentaire.ch" className="underline">Écrire à VYDA</a>}</p>}
           <div className="grid grid-cols-[auto_1fr] gap-3">
-            <button type="button" onClick={() => setStep(2)} className="min-h-12 rounded-full border border-slate-200 px-5 font-bold text-slate-600">Retour</button>
-            <button type="submit" className="flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#176654] px-5 font-bold text-white">Préparer ma demande <ArrowRightIcon className="h-4 w-4" /></button>
+            <button type="button" onClick={() => { setStep(1); setError(""); }} className="min-h-12 rounded-full border border-slate-200 px-5 font-bold text-slate-600 transition hover:bg-slate-50">Retour</button>
+            <button type="submit" disabled={status === "loading"} className="primary-button disabled:cursor-wait disabled:opacity-60">
+              {status === "loading" ? "Envoi…" : "Recevoir mon analyse"}
+              {status !== "loading" && <ArrowRightIcon className="h-4 w-4" />}
+            </button>
           </div>
         </fieldset>
       )}
 
-      <p className="mt-5 flex items-center justify-center gap-2 text-center text-xs text-slate-400"><ShieldIcon className="h-4 w-4" /> Vos informations restent confidentielles.</p>
+      <p className="mt-5 flex items-center justify-center gap-2 text-center text-xs text-slate-400"><ShieldIcon className="h-4 w-4" /> Données confidentielles · Aucun démarchage abusif</p>
     </form>
   );
 }

@@ -12,7 +12,7 @@ export function Footer() {
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#176654] text-white"><ToothIcon className="h-5 w-5" /></span>
               <span className="font-extrabold tracking-tight text-[#102d28]">assurance-dentaire<span className="text-[#f36f38]">.ch</span></span>
             </Link>
-            <p className="mt-4 text-sm leading-6 text-slate-500">Une plateforme suisse d’information et d’orientation proposée par VYDA SA.</p>
+            <p className="mt-4 text-sm leading-6 text-slate-500">Une plateforme suisse d’information et d’analyse proposée par VYDA SA. Nous ne sommes ni une caisse-maladie ni un assureur.</p>
           </div>
           <div>
             <h2 className="text-sm font-bold text-[#102d28]">Navigation</h2>
@@ -33,7 +33,7 @@ export function Footer() {
         </div>
         <div className="mt-10 flex flex-col gap-3 border-t border-slate-200 pt-6 text-xs leading-5 text-slate-500 sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} VYDA SA. Tous droits réservés.</p>
-          <p className="max-w-2xl sm:text-right">Les informations présentées sont générales et ne remplacent ni les conditions contractuelles d’un assureur ni un conseil juridique.</p>
+          <p className="max-w-2xl sm:text-right">Les informations sont générales. Les conditions contractuelles de l’assureur font foi avant toute souscription.</p>
         </div>
       </Container>
     </footer>
