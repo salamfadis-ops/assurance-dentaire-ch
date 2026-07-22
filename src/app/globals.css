@@ -3,13 +3,18 @@
 :root {
   --background: #ffffff;
   --foreground: #102d28;
+  --vyda-ink: #071c19;
+  --vyda-green: #176654;
+  --vyda-mint: #b9f1dd;
+  --vyda-coral: #f5a278;
+  --vyda-paper: #f4f6f2;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: Arial, Helvetica, sans-serif;
-  --font-display: Georgia, "Times New Roman", serif;
+  --font-sans: "Segoe UI Variable", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-display: "Segoe UI Variable Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
 * {
@@ -23,7 +28,7 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Segoe UI Variable", "Helvetica Neue", Helvetica, Arial, sans-serif;
   padding-bottom: 4.75rem;
   text-rendering: optimizeLegibility;
 }
@@ -89,6 +94,41 @@ select {
   transition: background-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
 
+.premium-button {
+  align-items: center;
+  background: var(--vyda-mint);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22), inset 0 1px rgba(255, 255, 255, 0.48);
+  color: #08241f;
+  display: inline-flex;
+  font-weight: 800;
+  gap: 0.55rem;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  transition: box-shadow 300ms ease, transform 300ms ease, background-color 300ms ease;
+}
+
+.premium-button::after {
+  background: linear-gradient(105deg, transparent 25%, rgba(255, 255, 255, 0.55) 48%, transparent 72%);
+  content: "";
+  inset: 0;
+  position: absolute;
+  transform: translateX(-120%);
+  transition: transform 650ms ease;
+}
+
+.premium-button:hover {
+  background: #cef8e8;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3), inset 0 1px rgba(255, 255, 255, 0.62);
+  transform: translateY(-2px);
+}
+
+.premium-button:hover::after {
+  transform: translateX(120%);
+}
+
 .primary-button:hover {
   background: #0f5747;
   box-shadow: 0 12px 28px rgba(23, 102, 84, 0.2);
@@ -138,28 +178,98 @@ select {
 }
 
 .eyebrow {
-  color: #19715e;
-  font-size: 0.75rem;
+  color: #176654;
+  font-size: 0.68rem;
   font-weight: 800;
-  letter-spacing: 0.19em;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
 }
 
 .section-title {
   color: #102d28;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(2.25rem, 5vw, 3.5rem);
+  font-family: "Segoe UI Variable Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: clamp(2.4rem, 5vw, 4.25rem);
   font-weight: 600;
-  letter-spacing: -0.04em;
-  line-height: 1.08;
+  letter-spacing: -0.055em;
+  line-height: 1.02;
   text-wrap: balance;
 }
 
 .section-intro {
-  color: #526173;
+  color: #5b6f69;
   font-size: 1.08rem;
   line-height: 1.8;
   max-width: 44rem;
+}
+
+.premium-noise {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.13'/%3E%3C/svg%3E");
+  mix-blend-mode: soft-light;
+}
+
+.premium-card {
+  border: 1px solid rgba(12, 42, 37, 0.07);
+  border-radius: 2rem;
+  box-shadow: 0 1px 1px rgba(8, 35, 30, 0.02), 0 16px 45px rgba(8, 35, 30, 0.045);
+  transition: box-shadow 500ms cubic-bezier(0.22, 1, 0.36, 1), transform 500ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.premium-card:hover {
+  box-shadow: 0 2px 2px rgba(8, 35, 30, 0.03), 0 28px 70px rgba(8, 35, 30, 0.1);
+  transform: translateY(-5px);
+}
+
+.feature-icon {
+  align-items: center;
+  background: #d6ebe2;
+  border-radius: 0.9rem;
+  color: #176654;
+  display: inline-flex;
+  height: 2.75rem;
+  justify-content: center;
+  width: 2.75rem;
+}
+
+.faq-toggle {
+  border: 1px solid #d7e2dd;
+  border-radius: 999px;
+  flex: 0 0 auto;
+  height: 2rem;
+  position: relative;
+  transition: background-color 250ms ease, border-color 250ms ease, transform 300ms ease;
+  width: 2rem;
+}
+
+.faq-toggle::before,
+.faq-toggle::after {
+  background: #176654;
+  content: "";
+  height: 1px;
+  left: 50%;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  transition: transform 250ms ease;
+  width: 0.7rem;
+}
+
+.faq-toggle::after {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+details[open] .faq-toggle {
+  background: #176654;
+  border-color: #176654;
+  transform: rotate(180deg);
+}
+
+details[open] .faq-toggle::before,
+details[open] .faq-toggle::after {
+  background: white;
+}
+
+details[open] .faq-toggle::after {
+  transform: translate(-50%, -50%) rotate(0deg);
 }
 
 .assessment-kicker {
@@ -172,7 +282,7 @@ select {
 
 .assessment-title {
   color: #102d28;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: "Segoe UI Variable Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: clamp(2rem, 5vw, 3rem);
   font-weight: 600;
   letter-spacing: -0.04em;
