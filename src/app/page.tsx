@@ -97,17 +97,14 @@ export default function Home() {
               <h1 className="max-w-[44rem] font-display text-[3.25rem] font-semibold leading-[0.96] tracking-[-0.065em] text-white sm:text-[4.8rem] lg:text-[5.15rem] xl:text-[5.7rem]">
                 Vos dents méritent mieux qu’un tableau de primes.
               </h1>
-              <p className="mt-7 max-w-[40rem] text-lg leading-8 text-[#a9beb8] sm:text-xl sm:leading-9">
-                Évaluez votre niveau de protection, anticipez vos besoins et découvrez les points à vérifier avant de choisir une assurance dentaire en Suisse.
-              </p>
+              <p className="mt-7 max-w-[38rem] text-lg leading-8 text-[#a9beb8] sm:text-xl">Votre score, vos priorités et un conseiller VYDA. En 2 minutes.</p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <a href="/bilan" className="premium-button group min-h-14 px-7 text-[0.95rem]">
-                  Découvrir mon score <ArrowRightIcon className="h-4 w-4 transition duration-300 group-hover:translate-x-1" />
+                  Être rappelé gratuitement <ArrowRightIcon className="h-4 w-4 transition duration-300 group-hover:translate-x-1" />
                 </a>
-                <a href="#methode" className="inline-flex min-h-14 items-center justify-center gap-2 rounded-full border border-white/15 px-6 text-sm font-bold text-white transition hover:border-white/30 hover:bg-white/[0.06]">Voir la méthode <span aria-hidden="true">↓</span></a>
               </div>
-              <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-xs font-semibold text-[#8da9a1]">
-                {["Gratuit", "Sans engagement", "Rapport PDF immédiat"].map((item) => <span key={item} className="flex items-center gap-2"><CheckIcon className="h-3.5 w-3.5 text-[#a8efd5]" />{item}</span>)}
+              <div className="mt-7 flex flex-wrap gap-x-5 gap-y-3 text-xs font-semibold text-[#9db3ad]">
+                {["100 % gratuit", "Sans engagement", "Réponse sous 24 h", "Conseiller indépendant FINMA"].map((item) => <span key={item} className="flex items-center gap-2"><CheckIcon className="h-3.5 w-3.5 text-[#a8efd5]" />{item}</span>)}
               </div>
             </div>
             <div className="hero-form-enter lg:-mr-8 xl:-mr-12"><ProtectionVisual /></div>
@@ -125,14 +122,14 @@ export default function Home() {
           </Container>
         </section>
 
-        <section id="methode" className="scroll-mt-24 overflow-hidden bg-[#f4f6f2] py-20 sm:py-28 lg:py-36">
+        <section id="methode" className="scroll-mt-24 overflow-hidden bg-[#f4f6f2] py-16 sm:py-24 lg:py-28">
           <Container>
             <div className="grid items-end gap-8 lg:grid-cols-[1fr_0.8fr] lg:gap-20">
               <div>
                 <p className="eyebrow">La différence VYDA</p>
                 <h2 className="section-title mt-5 max-w-[50rem]">Une décision sérieuse commence par les bonnes questions.</h2>
               </div>
-              <p className="section-intro lg:pb-2">Nous ne classons pas des logos. Nous transformons votre situation en une lecture structurée, utile avant toute demande d’offre.</p>
+              <p className="section-intro lg:pb-2">Pas de classement opaque : votre situation, votre score, vos actions.</p>
             </div>
 
             <div className="mt-14 grid gap-5 lg:grid-cols-[1.08fr_0.92fr]">
@@ -140,7 +137,7 @@ export default function Home() {
                 <div className="relative z-10 max-w-md">
                   <span className="feature-icon"><ScanIcon className="h-5 w-5" /></span>
                   <h3 className="mt-6 font-display text-3xl font-semibold tracking-[-0.04em] text-[#0c2a25] sm:text-4xl">Votre contrat, enfin lisible.</h3>
-                  <p className="mt-4 max-w-sm leading-7 text-[#526a64]">Identifiez les plafonds, délais et exclusions qui déterminent la valeur réelle d’une couverture.</p>
+                  <p className="mt-4 max-w-sm leading-7 text-[#526a64]">Repérez plafonds, délais et exclusions.</p>
                 </div>
                 <div className="absolute -bottom-10 left-[8%] right-[-3%] transition duration-700 ease-out group-hover:-translate-y-2 group-hover:rotate-[-1deg]"><ContractIllustration /></div>
               </article>
@@ -155,7 +152,7 @@ export default function Home() {
                 <article className="premium-card group relative overflow-hidden bg-white p-7 sm:p-9">
                   <span className="feature-icon"><DocumentIcon className="h-5 w-5" /></span>
                   <div className="mt-6 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
-                    <div><h3 className="font-display text-3xl font-semibold tracking-[-0.04em] text-[#0c2a25]">Votre plan vous appartient.</h3><p className="mt-3 max-w-md leading-7 text-[#5b6f69]">Téléchargez un rapport personnel, clair et prêt à être utilisé.</p></div>
+                    <div><h3 className="font-display text-3xl font-semibold tracking-[-0.04em] text-[#0c2a25]">Votre plan vous appartient.</h3><p className="mt-3 max-w-md leading-7 text-[#5b6f69]">Un rapport personnel, prêt à utiliser.</p></div>
                     <span className="flex h-12 w-12 items-center justify-center rounded-full border border-[#dbe5e1] text-[#176654] transition duration-300 group-hover:-translate-y-1 group-hover:bg-[#176654] group-hover:text-white"><ArrowRightIcon className="h-5 w-5 rotate-90" /></span>
                   </div>
                 </article>
@@ -164,7 +161,7 @@ export default function Home() {
           </Container>
         </section>
 
-        <section id="fonctionnement" className="relative scroll-mt-24 overflow-hidden bg-[#071c19] py-20 text-white sm:py-28 lg:py-36">
+        <section id="fonctionnement" className="relative scroll-mt-24 overflow-hidden bg-[#071c19] py-16 text-white sm:py-24 lg:py-28">
           <div className="absolute -left-40 top-1/3 h-96 w-96 rounded-full bg-[#176654]/15 blur-[110px]" />
           <Container className="relative">
             <div className="mb-12 max-w-3xl sm:mb-16">
@@ -175,7 +172,7 @@ export default function Home() {
           </Container>
         </section>
 
-        <section id="comprendre" className="scroll-mt-24 bg-white py-20 sm:py-28 lg:py-36">
+        <section id="comprendre" className="scroll-mt-24 bg-white py-16 sm:py-24 lg:py-28">
           <Container>
             <div className="grid gap-12 lg:grid-cols-[0.76fr_1.24fr] lg:gap-24">
               <div className="lg:sticky lg:top-28 lg:self-start">
@@ -196,25 +193,7 @@ export default function Home() {
           </Container>
         </section>
 
-        <section className="bg-[#edf2ee] py-20 sm:py-28">
-          <Container>
-            <div className="relative overflow-hidden rounded-[2.25rem] bg-[#f9faf7] px-6 py-12 sm:px-12 sm:py-16 lg:px-16">
-              <svg aria-hidden="true" viewBox="0 0 320 320" className="absolute -right-24 -top-24 h-80 w-80 text-[#dce9e3]"><circle cx="160" cy="160" r="115" fill="none" stroke="currentColor" strokeWidth="32" /><circle cx="160" cy="160" r="62" fill="none" stroke="#f5a278" strokeWidth="2" strokeDasharray="6 8" /></svg>
-              <div className="relative grid gap-10 lg:grid-cols-[1fr_0.7fr] lg:items-end">
-                <div className="max-w-3xl">
-                  <span className="inline-flex items-center gap-2 rounded-full bg-[#e1eee8] px-3 py-2 text-xs font-bold text-[#176654]"><ShieldIcon className="h-4 w-4" /> Une méthode conçue par VYDA SA</span>
-                  <blockquote className="mt-7 font-display text-3xl font-semibold leading-tight tracking-[-0.04em] text-[#102d28] sm:text-5xl">« La confiance ne vient pas d’une promesse. Elle vient d’une méthode que l’on peut comprendre. »</blockquote>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-2xl bg-white p-5"><strong className="font-display text-3xl text-[#102d28]">100%</strong><span className="mt-2 block text-xs font-semibold leading-5 text-[#5b6f69]">des critères du score sont explicités</span></div>
-                  <div className="rounded-2xl bg-[#102d28] p-5 text-white"><strong className="font-display text-3xl">0</strong><span className="mt-2 block text-xs font-semibold leading-5 text-[#a9beb8]">engagement pour obtenir votre bilan</span></div>
-                </div>
-              </div>
-            </div>
-          </Container>
-        </section>
-
-        <section id="faq" className="scroll-mt-24 bg-white py-20 sm:py-28 lg:py-36">
+        <section id="faq" className="scroll-mt-24 bg-[#f3f6f2] py-16 sm:py-24 lg:py-28">
           <Container className="grid gap-12 lg:grid-cols-[0.7fr_1.3fr] lg:gap-24">
             <div>
               <p className="eyebrow">En toute transparence</p>
@@ -233,7 +212,7 @@ export default function Home() {
           </Container>
         </section>
 
-        <section className="bg-white pb-20 sm:pb-28">
+        <section className="bg-white py-16 sm:py-24">
           <Container>
             <div className="premium-cta relative overflow-hidden rounded-[2.5rem] bg-[#176654] px-6 py-16 text-center text-white sm:px-12 sm:py-24">
               <div className="absolute -left-20 -top-32 h-80 w-80 rounded-full border-[55px] border-white/[0.045]" />
@@ -241,8 +220,8 @@ export default function Home() {
               <div className="relative mx-auto max-w-4xl">
                 <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#c2f3e1]">Votre protection mérite d’être claire</p>
                 <h2 className="mt-5 font-display text-4xl font-semibold leading-[1.02] tracking-[-0.055em] sm:text-6xl">En deux minutes, vous saurez quoi vérifier.</h2>
-                <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-[#d5e8e2]">Obtenez votre Score Protection Dentaire et un plan d’action personnel. Gratuitement, sans engagement.</p>
-                <a href="/bilan" className="group mt-9 inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-white px-7 text-sm font-extrabold text-[#125444] shadow-[0_18px_50px_rgba(5,35,29,.25)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(5,35,29,.32)]">Commencer mon bilan <ArrowRightIcon className="h-4 w-4 transition group-hover:translate-x-1" /></a>
+                <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-[#d5e8e2]">100 % gratuit. Sans engagement. Réponse sous 24 h.</p>
+                <a href="/bilan" className="group mt-9 inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-white px-7 text-sm font-extrabold text-[#125444] shadow-[0_18px_50px_rgba(5,35,29,.25)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(5,35,29,.32)]">Être rappelé gratuitement <ArrowRightIcon className="h-4 w-4 transition group-hover:translate-x-1" /></a>
               </div>
             </div>
           </Container>

@@ -52,9 +52,11 @@ export function AssessmentWizard() {
   const [error, setError] = useState("");
   const [hydrated, setHydrated] = useState(false);
   const [restored, setRestored] = useState(false);
+  const [validating, setValidating] = useState(false);
   const [result, setResult] = useState<ReturnType<typeof calculateAssessment> | null>(null);
 
   const progress = (step / 8) * 100;
+  const timeRemaining = step <= 4 ? "moins de 2 minutes" : step <= 7 ? "moins d’1 minute" : "quelques secondes";
   const planningNeed = useMemo(() => calculatePlanningNeed(data), [data]);
 
   useEffect(() => {
@@ -103,14 +105,19 @@ export function AssessmentWizard() {
   }
 
   function next() {
+    if (validating) return;
     if (!stepIsValid(step)) {
       setError("Choisissez une réponse pour continuer.");
       return;
     }
-    setStep((current) => Math.min(8, current + 1));
-    setError("");
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    window.scrollTo({ top: 0, behavior: prefersReducedMotion ? "auto" : "smooth" });
+    setValidating(true);
+    window.setTimeout(() => {
+      setStep((current) => Math.min(8, current + 1));
+      setValidating(false);
+      setError("");
+      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      window.scrollTo({ top: 0, behavior: prefersReducedMotion ? "auto" : "smooth" });
+    }, 260);
   }
 
   function previous() {
@@ -179,6 +186,7 @@ export function AssessmentWizard() {
             <div>
               <p className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-[#b9f1dd]">Étape {step} sur 8</p>
               <p className="mt-1 text-sm font-semibold text-[#8da9a1]">{stepNames[step - 1]}</p>
+              <p className="mt-1 text-xs font-bold text-[#b9f1dd]">Temps restant : {timeRemaining}</p>
             </div>
             <span className="rounded-full bg-[#b9f1dd] px-3 py-1.5 text-sm font-extrabold text-[#08241f]">{Math.round(progress)}%</span>
           </div>
@@ -188,13 +196,14 @@ export function AssessmentWizard() {
           {restored && <p className="mt-3 text-right text-xs font-semibold text-slate-400">Progression restaurée</p>}
 
           <form onSubmit={finish} className="mt-5">
-            <div className="min-h-[31rem] overflow-hidden rounded-[2rem] border border-white/70 bg-[#fbfcfa] p-6 text-[#102d28] shadow-[0_35px_100px_rgba(0,0,0,0.28)] sm:rounded-[2.5rem] sm:p-9 lg:p-12">
+            <div className="relative min-h-[29rem] overflow-hidden rounded-[2rem] border border-white/70 bg-[#fbfcfa] p-6 text-[#102d28] shadow-[0_35px_100px_rgba(0,0,0,0.28)] sm:rounded-[2.5rem] sm:p-9 lg:p-12">
+                {validating && <div className="step-validation absolute inset-0 z-20 flex items-center justify-center bg-[#fbfcfa]/95"><span className="flex items-center gap-3 rounded-full bg-[#176654] px-5 py-3 text-sm font-extrabold text-white shadow-xl"><CheckIcon className="h-5 w-5" /> Réponse validée</span></div>}
                 <div key={step} className="assessment-step-enter">
                   {step === 1 && (
                     <div>
                       <p className="assessment-kicker">Commençons simplement</p>
                       <h1 className="assessment-title">Pour qui réalisez-vous ce bilan ?</h1>
-                      <p className="assessment-intro">Nous adaptons le score et les recommandations à la personne concernée.</p>
+                      <p className="assessment-intro">Le score s’adapte à la personne concernée.</p>
                       <div className="mt-8 grid gap-3 sm:grid-cols-3">
                         {([
                           ["adult", "Pour moi", "Un adulte"],
@@ -202,7 +211,6 @@ export function AssessmentWizard() {
                           ["family", "Pour ma famille", "Plusieurs personnes à protéger"],
                         ] as const).map(([value, label, description]) => <OptionButton key={value} active={data.profile === value} onClick={() => update("profile", value)} description={description}>{label}</OptionButton>)}
                       </div>
-                      <div className="mt-8 rounded-2xl bg-[#f3f7f4] p-4 text-sm leading-6 text-[#29423d]"><strong>Pourquoi cette question ?</strong> L’orthodontie, la prévention et les limites d’âge ne se lisent pas de la même façon selon le profil.</div>
                     </div>
                   )}
 
@@ -210,7 +218,7 @@ export function AssessmentWizard() {
                     <div>
                       <p className="assessment-kicker">Votre situation</p>
                       <h1 className="assessment-title">Quelques repères pour personnaliser le bilan.</h1>
-                      <p className="assessment-intro">Ces informations nous permettent d’adapter les points de vigilance.</p>
+                      <p className="assessment-intro">Deux repères pour personnaliser l’analyse.</p>
                       <div className="mt-8 grid gap-5 sm:grid-cols-2">
                         <label className="assessment-label">Canton de résidence<select value={data.canton} onChange={(event) => update("canton", event.target.value)} className="form-control"><option value="">Choisir</option>{cantons.map((canton) => <option key={canton}>{canton}</option>)}</select></label>
                         <label className="assessment-label">Tranche d’âge<select value={data.ageGroup} onChange={(event) => update("ageGroup", event.target.value)} className="form-control"><option value="">Choisir</option><option>0–6 ans</option><option>7–12 ans</option><option>13–17 ans</option><option>18–34 ans</option><option>35–54 ans</option><option>55 ans et plus</option><option>Plusieurs tranches d’âge</option></select></label>
@@ -223,7 +231,7 @@ export function AssessmentWizard() {
                     <div>
                       <p className="assessment-kicker">Vos priorités</p>
                       <h1 className="assessment-title">Quels besoins souhaitez-vous anticiper ?</h1>
-                      <p className="assessment-intro">Sélectionnez tout ce qui compte pour vous. Vous pourrez ajuster le budget ensuite.</p>
+                      <p className="assessment-intro">Sélectionnez toutes vos priorités.</p>
                       <div className="mt-7 grid gap-3 sm:grid-cols-2">
                         {(Object.keys(needCatalog) as NeedKey[]).map((need) => <OptionButton key={need} active={data.needs.includes(need)} onClick={() => toggleNeed(need)} description={needCatalog[need].description}>{needCatalog[need].label}</OptionButton>)}
                       </div>
@@ -235,7 +243,7 @@ export function AssessmentWizard() {
                     <div>
                       <p className="assessment-kicker">Calculateur de besoins</p>
                       <h1 className="assessment-title">Quel montant souhaitez-vous pouvoir absorber ?</h1>
-                      <p className="assessment-intro">Le montant proposé est une base de planification modifiable, pas un devis ni une estimation médicale.</p>
+                      <p className="assessment-intro">Ajustez cette base de planification selon votre situation.</p>
                       <div className="mt-8 rounded-3xl bg-[#f3f7f4] p-6 sm:p-8">
                         <p className="text-sm font-semibold text-slate-500">Besoin de planification</p>
                         <p key={data.customBudget || planningNeed} className="assessment-value-pulse mt-2 font-display text-4xl font-semibold tracking-tight text-[#102d28] sm:text-5xl">{formatCurrency(data.customBudget || planningNeed)}</p>
@@ -250,7 +258,7 @@ export function AssessmentWizard() {
                     <div>
                       <p className="assessment-kicker">Votre couverture</p>
                       <h1 className="assessment-title">Comment êtes-vous couvert aujourd’hui ?</h1>
-                      <p className="assessment-intro">L’assurance de base ne couvre en principe pas les soins dentaires courants.</p>
+                      <p className="assessment-intro">Indiquez uniquement votre couverture actuelle.</p>
                       <div className="mt-8 grid gap-3 sm:grid-cols-2">
                         {([
                           ["supplementary", "J’ai une complémentaire dentaire", "Une garantie spécifique est déjà en place"],
@@ -279,7 +287,7 @@ export function AssessmentWizard() {
                     <div>
                       <p className="assessment-kicker">Documents</p>
                       <h1 className="assessment-title">Préparez une future analyse détaillée.</h1>
-                      <p className="assessment-intro">Cette étape est facultative. Les PDF restent uniquement en mémoire pendant cette session et ne sont pas analysés pour l’instant.</p>
+                      <p className="assessment-intro">Facultatif. Les PDF restent sur votre appareil.</p>
                       <div className="mt-8 grid gap-4">
                         <FileDropzone id="contract-upload" label="Ajouter mon contrat d’assurance" description="Conditions, tableau des prestations ou police d’assurance" file={files.contract} onChange={(contract) => setFiles((current) => ({ ...current, contract }))} />
                         <FileDropzone id="quote-upload" label="Ajouter un devis de dentiste" description="Devis ou plan de traitement à conserver avec le bilan" file={files.quote} onChange={(quote) => setFiles((current) => ({ ...current, quote }))} />
@@ -292,7 +300,7 @@ export function AssessmentWizard() {
                     <div>
                       <p className="assessment-kicker">Dernière étape</p>
                       <h1 className="assessment-title">Votre Score Protection Dentaire est prêt.</h1>
-                      <p className="assessment-intro">Vérifiez votre synthèse avant de découvrir immédiatement votre niveau de protection.</p>
+                      <p className="assessment-intro">Vérifiez, puis découvrez votre score.</p>
                       <div className="mt-8 grid gap-4 sm:grid-cols-3">
                         <div className="rounded-2xl border border-slate-200 bg-[#f8faf9] p-5"><span className="text-[0.65rem] font-bold uppercase tracking-[0.16em] text-slate-500">Profil</span><strong className="mt-2 block text-lg text-[#102d28]">{data.profile ? profileLabels[data.profile] : "—"}</strong></div>
                         <div className="rounded-2xl border border-slate-200 bg-[#f8faf9] p-5"><span className="text-[0.65rem] font-bold uppercase tracking-[0.16em] text-slate-500">Priorités</span><strong className="mt-2 block text-lg text-[#102d28]">{data.needs.length} besoin{data.needs.length > 1 ? "s" : ""}</strong></div>
@@ -305,9 +313,9 @@ export function AssessmentWizard() {
             </div>
 
             {error && <p className="assessment-step-enter mt-4 rounded-xl bg-red-50 p-3 text-sm font-bold text-red-700" role="alert">{error}</p>}
-            <div className="mt-5 flex items-center justify-between gap-3">
+            <div className="sticky bottom-0 z-30 -mx-5 mt-5 flex items-center justify-between gap-3 border-t border-white/10 bg-[#071c19]/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0">
               <button type="button" onClick={previous} disabled={step === 1} className="min-h-12 rounded-full border border-white/15 bg-white/[0.05] px-5 text-sm font-bold text-[#a9beb8] transition hover:bg-white/[0.1] hover:text-white disabled:invisible">Retour</button>
-              {step < 8 ? <button type="button" onClick={next} className="premium-button min-h-12 min-w-36 px-6 text-sm">Continuer <ArrowRightIcon className="h-4 w-4" /></button> : <button type="submit" className="premium-button min-h-12 min-w-48 px-6 text-sm">Découvrir mon score<SparklesIcon className="h-4 w-4" /></button>}
+              {step < 8 ? <button type="button" onClick={next} disabled={validating} className="premium-button min-h-12 min-w-36 px-6 text-sm disabled:opacity-70">Continuer <ArrowRightIcon className="h-4 w-4" /></button> : <button type="submit" className="premium-button min-h-12 min-w-48 px-6 text-sm">Calculer mon score<SparklesIcon className="h-4 w-4" /></button>}
             </div>
             <p className="mt-5 flex items-center justify-center gap-2 text-center text-xs text-[#78978f]"><ShieldIcon className="h-4 w-4" /> Confidentiel · Sans engagement · Résultat immédiat</p>
           </form>

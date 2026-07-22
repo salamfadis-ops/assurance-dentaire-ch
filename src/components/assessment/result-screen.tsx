@@ -1,9 +1,10 @@
 "use client";
 
 import { domAnimation, LazyMotion, m, useReducedMotion } from "motion/react";
+import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useState } from "react";
-import { ArrowRightIcon, CheckIcon, DocumentIcon, ShieldIcon, SparklesIcon, ToothIcon } from "@/components/ui/icons";
+import { ArrowRightIcon, CheckIcon, DocumentIcon, ShieldIcon, ToothIcon } from "@/components/ui/icons";
 import type { AssessmentData, AssessmentFiles, AssessmentResult } from "@/lib/dental-assessment";
 import { formatCurrency, needCatalog, profileLabels } from "@/lib/dental-assessment";
 import { formatInternationalPhone, isValidSwissFrenchPhone, type SupportedDialCode } from "@/lib/phone";
@@ -19,7 +20,7 @@ type LeadStatus = "idle" | "loading" | "success" | "error";
 
 const categoryLabels = { coverage: "Couverture", prevention: "Prévention", anticipation: "Anticipation", budget: "Budget", documentation: "Documentation" };
 const categoryMaximums = { coverage: 24, prevention: 20, anticipation: 20, budget: 20, documentation: 16 };
-const socialProof = ["Conseiller indépendant", "FINMA", "Réponse sous 24h", "Sans engagement"];
+const socialProof = ["100 % gratuit", "Sans engagement", "Réponse sous 24 h", "Conseiller indépendant FINMA"];
 const ease = [0.22, 1, 0.36, 1] as const;
 
 export function ResultScreen({ data, files, result, onRestart }: ResultScreenProps) {
@@ -127,12 +128,13 @@ export function ResultScreen({ data, files, result, onRestart }: ResultScreenPro
           <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-5 sm:px-8 lg:grid-cols-[0.82fr_1.18fr] lg:gap-20">
             <div className="relative mx-auto h-64 w-64 sm:h-80 sm:w-80">
               <div className="absolute inset-[15%] rounded-full bg-white/[0.035] blur-xl" />
+              <m.div initial={reduceMotion ? false : { opacity: 0.6, scale: 0.68 }} animate={{ opacity: 0, scale: 1.18 }} transition={{ duration: reduceMotion ? 0 : 1.25, delay: 0.2, ease }} className="absolute inset-3 rounded-full border border-[#b9f1dd]/70" />
               <svg viewBox="0 0 180 180" className="h-full w-full -rotate-90" aria-hidden="true">
                 <circle cx="90" cy="90" r="78" fill="none" stroke="rgba(255,255,255,.075)" strokeWidth="6" />
                 <m.circle cx="90" cy="90" r="78" fill="none" stroke={scoreColor} strokeWidth="6" strokeLinecap="round" strokeDasharray={circumference} initial={{ strokeDashoffset: circumference }} animate={{ strokeDashoffset: circumference * (1 - result.score / 100) }} transition={{ duration: reduceMotion ? 0 : 1.6, delay: 0.25, ease }} />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center"><m.span initial={reduceMotion ? false : { scale: 0.68, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.55, duration: 0.7, ease }} className="font-display text-7xl font-semibold tracking-[-0.075em] sm:text-8xl">{result.score}</m.span><span className="mt-1 text-[0.67rem] font-bold uppercase tracking-[0.23em] text-[#8da9a1]">sur 100</span></div>
-              <m.span initial={reduceMotion ? false : { opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 1.1, ease }} className="absolute right-0 top-8 flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f5a278] text-[#32180f] shadow-xl"><SparklesIcon className="h-5 w-5" /></m.span>
+              <m.span initial={reduceMotion ? false : { opacity: 0, scale: 0.7, rotate: -12 }} animate={{ opacity: 1, scale: 1, rotate: 0 }} transition={{ delay: 1.05, ease }} className="absolute right-0 top-8 flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f5a278] text-[#32180f] shadow-xl"><CheckIcon className="h-5 w-5" /></m.span>
             </div>
 
             <div>
@@ -154,11 +156,15 @@ export function ResultScreen({ data, files, result, onRestart }: ResultScreenPro
                 <div>
                   <p className="text-[0.67rem] font-bold uppercase tracking-[0.2em] text-[#176654]">Votre analyse personnelle</p>
                   <h2 className="mt-3 font-display text-3xl font-semibold leading-tight tracking-[-0.045em] sm:text-4xl">Recevez votre analyse personnalisée et soyez rappelé par un conseiller.</h2>
-                  <p className="mt-4 text-sm leading-6 text-[#61736e]">Un conseiller VYDA reprend votre score avec vous et répond à vos questions.</p>
+                  <div className="mt-6 flex items-center gap-4">
+                    <Image src="/conseiller-vyda.webp" width={72} height={72} sizes="72px" alt="Alexandre, conseiller VYDA" className="h-[4.5rem] w-[4.5rem] rounded-2xl object-cover shadow-[0_10px_24px_rgba(8,35,30,.14)]" />
+                    <div><strong className="block text-base text-[#102d28]">Alexandre</strong><span className="mt-1 block text-xs font-semibold text-[#61736e]">Votre conseiller VYDA</span></div>
+                  </div>
+                  <p className="mt-5 rounded-2xl bg-[#edf5f1] p-4 text-sm font-semibold leading-6 text-[#29443d]">Vous serez rappelé par un conseiller VYDA, pas par un centre d’appel.</p>
                 </div>
 
                 {leadStatus === "success" ? (
-                  <div className="flex min-h-72 flex-col items-center justify-center rounded-3xl bg-[#e8f5ef] p-7 text-center" role="status"><span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#176654] text-white"><CheckIcon className="h-7 w-7" /></span><h3 className="mt-5 text-2xl font-bold">Votre demande est bien enregistrée.</h3><p className="mt-2 max-w-md text-sm leading-6 text-[#526a64]">Votre conseiller VYDA vous recontactera personnellement sous 24 heures ouvrées.</p></div>
+                  <div className="flex min-h-72 flex-col items-center justify-center rounded-3xl bg-[#e8f5ef] p-7 text-center" role="status"><m.span initial={reduceMotion ? false : { scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 280, damping: 18 }} className="flex h-14 w-14 items-center justify-center rounded-full bg-[#176654] text-white"><CheckIcon className="h-7 w-7" /></m.span><h3 className="mt-5 text-2xl font-bold">Demande enregistrée.</h3><p className="mt-2 max-w-md text-sm leading-6 text-[#526a64]">Alexandre vous rappelle sous 24 heures ouvrées.</p></div>
                 ) : (
                   <form onSubmit={submitLead} className="grid gap-4" noValidate>
                     <div className="grid gap-4 sm:grid-cols-2"><label className="assessment-label">Prénom<input required autoComplete="given-name" value={contact.firstName} onChange={(event) => updateContact("firstName", event.target.value)} className="form-control" /></label><label className="assessment-label">E-mail<input required type="email" inputMode="email" autoComplete="email" value={contact.email} onChange={(event) => updateContact("email", event.target.value)} className="form-control" /></label></div>
@@ -171,7 +177,7 @@ export function ResultScreen({ data, files, result, onRestart }: ResultScreenPro
                     </label>
                     <label className="flex items-start gap-3 rounded-2xl bg-[#f6f8f6] p-4 text-xs leading-5 text-[#61736e]"><input required type="checkbox" checked={contact.consent} onChange={(event) => updateContact("consent", event.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-[#176654]" /><span>J’accepte d’être recontacté par VYDA SA au sujet de mon bilan. <Link href="/confidentialite" target="_blank" className="font-bold text-[#176654] underline underline-offset-2">Confidentialité</Link></span></label>
                     {leadError && <p className="rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-700" role="alert">{leadError} {leadStatus === "error" && <a href="mailto:contact@assurance-dentaire.ch" className="underline">Contacter VYDA</a>}</p>}
-                    <button type="submit" disabled={leadStatus === "loading"} className="premium-button min-h-14 w-full whitespace-nowrap px-4 text-[0.78rem] disabled:cursor-wait disabled:opacity-60 sm:px-6 sm:text-sm">{leadStatus === "loading" ? "Envoi sécurisé…" : "Recevoir mon analyse gratuite"}<ArrowRightIcon className="h-4 w-4 shrink-0" /></button>
+                    <button type="submit" disabled={leadStatus === "loading"} className="premium-button min-h-14 w-full whitespace-nowrap px-4 text-[0.78rem] disabled:cursor-wait disabled:opacity-60 sm:px-6 sm:text-sm">{leadStatus === "loading" ? "Envoi sécurisé…" : "Être rappelé gratuitement"}<ArrowRightIcon className="h-4 w-4 shrink-0" /></button>
                   </form>
                 )}
               </div>
@@ -196,6 +202,7 @@ export function ResultScreen({ data, files, result, onRestart }: ResultScreenPro
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row"><button type="button" onClick={onRestart} className="rounded-full border border-[#cedbd5] px-6 py-3 text-sm font-bold text-[#61736e] transition hover:bg-white">Recommencer le bilan</button><Link href="/" className="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-[#176654]">Retour à l’accueil <ArrowRightIcon className="h-4 w-4" /></Link></div>
           </div>
         </section>
+        {leadStatus !== "success" && <a href="#recevoir-analyse" className="premium-button fixed inset-x-3 bottom-3 z-40 min-h-12 text-sm shadow-[0_16px_45px_rgba(2,18,15,.35)] sm:hidden">Être rappelé gratuitement <ArrowRightIcon className="h-4 w-4" /></a>}
       </m.main>
     </LazyMotion>
   );

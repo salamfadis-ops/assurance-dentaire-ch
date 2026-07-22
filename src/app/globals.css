@@ -329,12 +329,22 @@ details[open] .faq-toggle::after {
   }
 }
 
+@keyframes validation-pop {
+  0% { opacity: 0; transform: scale(0.94); }
+  45% { opacity: 1; transform: scale(1.025); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
 .assessment-step-enter {
   animation: assessment-enter 240ms ease-out both;
 }
 
 .assessment-value-pulse {
   animation: assessment-value 180ms ease-out both;
+}
+
+.step-validation {
+  animation: validation-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 input[type="range"] {

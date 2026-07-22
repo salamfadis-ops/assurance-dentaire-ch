@@ -108,12 +108,12 @@ export function calculateAssessment(data: AssessmentData, files: AssessmentFiles
   if (recommendations.length < 3) recommendations.push("Conserver une réserve dédiée aux soins non couverts ou dépassant le plafond annuel.");
 
   if (score >= 72) {
-    return { score, level: "solid", label: "Protection solide", summary: "Votre organisation actuelle présente de bons fondamentaux. Une vérification des limites du contrat reste utile.", breakdown, planningNeed, recommendations };
+    return { score, level: "solid", label: "Protection solide", summary: "Vos bases sont solides. Vérifiez encore les limites du contrat.", breakdown, planningNeed, recommendations };
   }
   if (score >= 42) {
-    return { score, level: "partial", label: "Protection à renforcer", summary: "Plusieurs bases sont présentes, mais certains risques ou limites contractuelles méritent d’être clarifiés.", breakdown, planningNeed, recommendations };
+    return { score, level: "partial", label: "Protection à renforcer", summary: "Vos bases existent, mais plusieurs limites restent à clarifier.", breakdown, planningNeed, recommendations };
   }
-  return { score, level: "fragile", label: "Protection fragile", summary: "Votre situation pourrait vous exposer à une part importante des coûts. Priorisez la clarification et l’anticipation.", breakdown, planningNeed, recommendations };
+  return { score, level: "fragile", label: "Protection fragile", summary: "Une part importante des coûts pourrait rester à votre charge.", breakdown, planningNeed, recommendations };
 }
 
 export function formatCurrency(value: number) {
