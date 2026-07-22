@@ -12,6 +12,7 @@ type LeadPayload = {
   consent?: boolean;
   website?: string;
   attribution?: Record<string, string | undefined>;
+  assessment?: { score?: number; planningNeed?: number; coverage?: string };
 };
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -35,6 +36,9 @@ async function sendWithResend(lead: Required<Omit<LeadPayload, "attribution" | "
     `Prénom : ${lead.firstName}`,
     `E-mail : ${lead.email}`,
     `Téléphone : ${lead.phone || "Non renseigné"}`,
+    `Score dentaire : ${lead.assessment.score || "Non renseigné"}`,
+    `Besoin de planification : ${lead.assessment.planningNeed ? `CHF ${lead.assessment.planningNeed}` : "Non renseigné"}`,
+    `Couverture déclarée : ${lead.assessment.coverage || "Non renseignée"}`,
     `Source : ${lead.attribution.source ?? "Direct"}`,
     `Campagne : ${lead.attribution.campaign ?? "Non renseignée"}`,
     `Mot-clé : ${lead.attribution.term ?? "Non renseigné"}`,
@@ -112,6 +116,11 @@ export async function POST(request: Request) {
       campaign: clean(payload.attribution?.campaign, 160),
       term: clean(payload.attribution?.term, 160),
       landingPage: clean(payload.attribution?.landingPage, 500),
+    },
+    assessment: {
+      score: Math.max(0, Math.min(100, Number(payload.assessment?.score) || 0)),
+      planningNeed: Math.max(0, Math.min(1_000_000, Number(payload.assessment?.planningNeed) || 0)),
+      coverage: clean(payload.assessment?.coverage, 80),
     },
   };
 

@@ -44,21 +44,21 @@ const benefits = [
 const steps = [
   {
     number: "01",
-    title: "Décrivez votre besoin",
+    title: "Répondez à 8 questions",
     description:
-      "Adulte ou enfant, canton et priorité : le formulaire prend environ une minute.",
+      "Profil, besoins, couverture et budget : votre progression est sauvegardée pendant la session.",
   },
   {
     number: "02",
-    title: "Nous analysons votre situation",
+    title: "Découvrez votre score",
     description:
-      "Un conseiller examine les critères qui comptent vraiment pour éviter les mauvaises surprises.",
+      "Votre Score Protection Dentaire mesure cinq dimensions et met en évidence vos priorités.",
   },
   {
     number: "03",
-    title: "Recevez une orientation claire",
+    title: "Téléchargez votre plan d’action",
     description:
-      "Vous obtenez des pistes adaptées et restez libre de poursuivre, sans engagement.",
+      "Obtenez un rapport PDF personnel avec votre score, votre budget et des recommandations concrètes.",
   },
 ];
 
@@ -144,10 +144,10 @@ export default function Home() {
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <a
-                  href="#estimation"
+                  href="/bilan"
                   className="primary-button group min-h-14 px-7 text-base shadow-[0_12px_30px_rgba(23,102,84,0.24)]"
                 >
-                  Comparer les couvertures
+                  Faire mon bilan gratuit
                   <ArrowRightIcon className="h-4 w-4 transition group-hover:translate-x-1" />
                 </a>
                 <span className="inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 sm:justify-start">
@@ -211,9 +211,9 @@ export default function Home() {
           <Container>
             <div className="grid gap-12 lg:grid-cols-[0.75fr_1.25fr] lg:gap-20">
               <div>
-                <p className="eyebrow text-[#93d3c2]">Comment ça marche</p>
+                <p className="eyebrow text-[#93d3c2]">Le bilan digital</p>
                 <h2 className="mt-4 max-w-lg font-display text-4xl font-semibold tracking-[-0.035em] sm:text-5xl">
-                  Trois étapes pour y voir clair.
+                  8 questions. 1 score. Un plan clair.
                 </h2>
                 <p className="mt-5 max-w-md text-lg leading-8 text-slate-300">
                   Une démarche lisible : nous partons de votre besoin et des critères contractuels qui influencent réellement votre couverture.
@@ -278,8 +278,8 @@ export default function Home() {
                     </li>
                   ))}
                 </ul>
-                <a href="#estimation" className="mt-9 inline-flex items-center gap-2 font-bold text-[#176654] underline decoration-[#f36f38] decoration-2 underline-offset-8">
-                  Recevoir mon analyse gratuite <ArrowRightIcon className="h-4 w-4" />
+                <a href="/bilan" className="mt-9 inline-flex items-center gap-2 font-bold text-[#176654] underline decoration-[#f36f38] decoration-2 underline-offset-8">
+                  Calculer mon score <ArrowRightIcon className="h-4 w-4" />
                 </a>
               </div>
             </div>
@@ -317,8 +317,8 @@ export default function Home() {
               <p className="eyebrow">Questions fréquentes</p>
               <h2 className="section-title mt-4">Les réponses essentielles.</h2>
               <p className="section-intro mt-5">Une question plus précise ? Décrivez-nous votre situation pour recevoir une première orientation.</p>
-              <a href="#estimation" className="mt-7 inline-flex items-center gap-2 rounded-full border border-[#176654] px-5 py-3 text-sm font-bold text-[#176654] transition hover:bg-[#176654] hover:text-white">
-                Recevoir une réponse <ArrowRightIcon className="h-4 w-4" />
+              <a href="/bilan" className="mt-7 inline-flex items-center gap-2 rounded-full border border-[#176654] px-5 py-3 text-sm font-bold text-[#176654] transition hover:bg-[#176654] hover:text-white">
+                Faire le bilan <ArrowRightIcon className="h-4 w-4" />
               </a>
             </div>
             <div className="divide-y divide-slate-200 border-y border-slate-200">
@@ -344,8 +344,8 @@ export default function Home() {
                 <p className="text-sm font-bold uppercase tracking-[0.2em] text-emerald-100">Décidez avec plus de clarté</p>
                 <h2 className="mt-4 font-display text-4xl font-semibold tracking-[-0.035em] sm:text-5xl">Trouvez vos options en 60 secondes.</h2>
                 <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-emerald-50/85">Une analyse gratuite, adaptée à votre situation et sans engagement.</p>
-                <a href="#estimation" className="group mt-8 inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-white px-7 font-bold text-[#176654] shadow-xl transition hover:-translate-y-0.5">
-                  Comparer maintenant <ArrowRightIcon className="h-4 w-4 transition group-hover:translate-x-1" />
+                <a href="/bilan" className="group mt-8 inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-white px-7 font-bold text-[#176654] shadow-xl transition hover:-translate-y-0.5">
+                  Calculer mon score <ArrowRightIcon className="h-4 w-4 transition group-hover:translate-x-1" />
                 </a>
               </div>
             </div>

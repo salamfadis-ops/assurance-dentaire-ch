@@ -6,6 +6,7 @@ import { Container } from "@/components/layout/container";
 import { ArrowRightIcon, MenuIcon, ToothIcon, XIcon } from "@/components/ui/icons";
 
 const navigation = [
+  ["Bilan gratuit", "/bilan"],
   ["Comprendre", "#comprendre"],
   ["Comment ça marche", "#fonctionnement"],
   ["Couvertures", "#couvertures"],
@@ -32,9 +33,7 @@ export function Header() {
           ))}
         </nav>
 
-        <a href="#estimation" className="hidden items-center gap-2 rounded-full bg-[#176654] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#0f5747] sm:inline-flex">
-          Comparer gratuitement <ArrowRightIcon className="h-4 w-4" />
-        </a>
+        <Link href="/bilan" className="hidden items-center gap-2 rounded-full bg-[#176654] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#0f5747] sm:inline-flex">Faire mon bilan <ArrowRightIcon className="h-4 w-4" /></Link>
         <button
           type="button"
           aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
@@ -52,9 +51,7 @@ export function Header() {
             {navigation.map(([label, href]) => (
               <a key={href} href={href} onClick={() => setOpen(false)} className="rounded-xl px-3 py-3 font-semibold text-slate-700 hover:bg-slate-50">{label}</a>
             ))}
-            <a href="#estimation" onClick={() => setOpen(false)} className="mt-3 flex items-center justify-center gap-2 rounded-full bg-[#176654] px-5 py-3 font-bold text-white">
-              Comparer gratuitement <ArrowRightIcon className="h-4 w-4" />
-            </a>
+            <Link href="/bilan" onClick={() => setOpen(false)} className="mt-3 flex items-center justify-center gap-2 rounded-full bg-[#176654] px-5 py-3 font-bold text-white">Faire mon bilan <ArrowRightIcon className="h-4 w-4" /></Link>
           </div>
         </nav>
       )}

@@ -17,6 +17,7 @@ export function Footer() {
           <div>
             <h2 className="text-sm font-bold text-[#102d28]">Navigation</h2>
             <ul className="mt-4 space-y-3 text-sm text-slate-600">
+              <li><Link href="/bilan" className="hover:text-[#176654]">Bilan gratuit</Link></li>
               <li><a href="#comprendre" className="hover:text-[#176654]">Comprendre</a></li>
               <li><a href="#fonctionnement" className="hover:text-[#176654]">Fonctionnement</a></li>
               <li><a href="#faq" className="hover:text-[#176654]">Questions fréquentes</a></li>

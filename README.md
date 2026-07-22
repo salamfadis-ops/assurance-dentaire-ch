@@ -36,3 +36,17 @@ Le formulaire envoie les demandes via l’API serveur `/api/leads`. Deux modes d
 Copier `.env.example` vers `.env.local` et renseigner au moins une méthode avant la mise en production. Sans configuration, les données sont masquées et journalisées uniquement en développement ; la production renvoie une erreur explicite plutôt que de perdre silencieusement un lead.
 
 L’attribution UTM est conservée avec la demande. Le suivi Google Ads et son consentement peuvent être activés avec `NEXT_PUBLIC_GOOGLE_ADS_ID` et `NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_TARGET`.
+
+## Bilan Protection Dentaire
+
+La route `/bilan` contient un parcours produit en huit étapes :
+
+- score dynamique sur 100 et détail par dimension ;
+- calculateur de besoin financier personnalisable ;
+- ajout local d’un contrat et d’un devis PDF ;
+- sauvegarde temporaire dans `sessionStorage` ;
+- recommandations personnalisées ;
+- rapport PDF généré côté serveur via `/api/report` ;
+- animations Motion avec respect de `prefers-reduced-motion`.
+
+Les fichiers ajoutés ne quittent pas le navigateur dans cette version. Ils sont préparés pour une future chaîne d’analyse documentaire.
