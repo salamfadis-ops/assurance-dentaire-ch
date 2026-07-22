@@ -35,6 +35,7 @@ export function Header() {
           {open ? <XIcon className="h-5 w-5" /> : <MenuIcon className="h-5 w-5" />}
         </button>
       </Container>
+      <div className="border-t border-white/[0.06] bg-white/[0.025] px-4 py-2 text-center text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#9db3ad]">Plus de 12 ans d’expérience en prévoyance et assurances.</div>
       {open && (
         <nav id="navigation-mobile" className="border-t border-white/10 bg-[#071c19] px-5 py-5 sm:hidden" aria-label="Navigation mobile">
           <div className="grid gap-1">

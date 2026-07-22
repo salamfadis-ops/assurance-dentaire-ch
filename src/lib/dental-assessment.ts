@@ -56,7 +56,7 @@ export type AssessmentResult = {
 };
 
 export const initialAssessment: AssessmentData = {
-  profile: "",
+  profile: "adult",
   canton: "",
   ageGroup: "",
   householdSize: 1,

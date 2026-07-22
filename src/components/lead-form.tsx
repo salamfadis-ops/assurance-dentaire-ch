@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRightIcon, CheckIcon, ShieldIcon } from "@/components/ui/icons";
+import { formatInternationalPhone, isValidSwissFrenchPhone, type SupportedDialCode } from "@/lib/phone";
 
 type FormData = {
   profile: string;
@@ -47,6 +48,7 @@ const needs = ["Orthodontie", "Soins courants", "Couverture complète", "Je souh
 export function LeadForm() {
   const [step, setStep] = useState(1);
   const [data, setData] = useState<FormData>(initialData);
+  const [dialCode, setDialCode] = useState<SupportedDialCode>("+41");
   const attributionRef = useRef<Attribution>({});
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [error, setError] = useState("");
@@ -80,8 +82,9 @@ export function LeadForm() {
     event.preventDefault();
     setError("");
 
-    if (!data.firstName || !data.email || !data.consent) {
-      setError("Renseignez votre prénom, votre e-mail et votre consentement.");
+    const phone = formatInternationalPhone(dialCode, data.phone);
+    if (!data.firstName || !data.email || !isValidSwissFrenchPhone(phone) || !data.consent) {
+      setError("Renseignez votre prénom, votre e-mail, un numéro suisse ou français valide et votre consentement.");
       return;
     }
 
@@ -90,7 +93,7 @@ export function LeadForm() {
       const response = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, attribution: attributionRef.current }),
+        body: JSON.stringify({ ...data, phone, attribution: attributionRef.current }),
       });
 
       if (!response.ok) throw new Error("submission_failed");
@@ -178,7 +181,10 @@ export function LeadForm() {
           <legend className="sr-only">Vos coordonnées</legend>
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="grid gap-2 text-sm font-bold text-slate-700">Prénom<input required autoComplete="given-name" value={data.firstName} onChange={(event) => update("firstName", event.target.value)} className="form-control" /></label>
-            <label className="grid gap-2 text-sm font-bold text-slate-700">Téléphone <span className="sr-only">facultatif</span><input type="tel" autoComplete="tel" inputMode="tel" value={data.phone} onChange={(event) => update("phone", event.target.value)} placeholder="Facultatif" className="form-control" /></label>
+            <label className="grid gap-2 text-sm font-bold text-slate-700">Téléphone
+              <span className="flex overflow-hidden rounded-xl border border-slate-300 bg-white focus-within:border-[#176654] focus-within:ring-3 focus-within:ring-[#176654]/10"><select aria-label="Indicatif téléphonique" value={dialCode} onChange={(event) => setDialCode(event.target.value as SupportedDialCode)} className="border-r border-slate-200 bg-slate-50 px-2 text-xs font-bold outline-none"><option value="+41">CH +41</option><option value="+33">FR +33</option></select><input required type="tel" autoComplete="tel-national" inputMode="tel" value={data.phone} onChange={(event) => update("phone", event.target.value)} placeholder={dialCode === "+41" ? "79 123 45 67" : "6 12 34 56 78"} className="min-h-12 min-w-0 flex-1 px-3 font-normal outline-none" /></span>
+              <span className="text-xs font-medium leading-5 text-slate-500">Votre conseiller VYDA vous rappelle personnellement. Aucune vente automatique.</span>
+            </label>
           </div>
           <label className="grid gap-2 text-sm font-bold text-slate-700">E-mail<input required type="email" autoComplete="email" inputMode="email" value={data.email} onChange={(event) => update("email", event.target.value)} className="form-control" /></label>
           <label className="absolute -left-[9999px]" aria-hidden="true">Votre site<input tabIndex={-1} autoComplete="off" value={data.website} onChange={(event) => update("website", event.target.value)} /></label>

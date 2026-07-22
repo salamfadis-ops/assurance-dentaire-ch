@@ -19,7 +19,7 @@ import {
 
 const STORAGE_KEY = "vyda-dental-assessment-v1";
 const cantons = ["AG", "AI", "AR", "BE", "BL", "BS", "FR", "GE", "GL", "GR", "JU", "LU", "NE", "NW", "OW", "SG", "SH", "SO", "SZ", "TG", "TI", "UR", "VD", "VS", "ZG", "ZH"];
-const stepNames = ["Profil", "Situation", "Besoins", "Calculateur", "Couverture", "Préparation", "Documents", "Coordonnées"];
+const stepNames = ["Profil", "Situation", "Besoins", "Calculateur", "Couverture", "Préparation", "Documents", "Résultat"];
 const ResultScreen = dynamic(() => import("@/components/assessment/result-screen").then((module) => module.ResultScreen), {
   loading: () => <main className="flex min-h-screen items-center justify-center bg-[#071c19]"><p className="font-bold text-[#b9f1dd]">Préparation de votre résultat…</p></main>,
 });
@@ -33,7 +33,7 @@ type OptionButtonProps = {
 
 function OptionButton({ active, children, description, onClick }: OptionButtonProps) {
   return (
-    <button type="button" onClick={onClick} aria-pressed={active} className={`group rounded-2xl border p-4 text-left transition active:scale-[0.985] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#176654] ${active ? "border-[#176654] bg-[#edf6f2] shadow-[0_0_0_1px_#176654]" : "border-slate-200 bg-white hover:border-emerald-700/40 hover:bg-[#fbfdfc]"}`}>
+    <button type="button" onClick={onClick} aria-pressed={active} className={`group w-full cursor-pointer rounded-2xl border p-4 text-left transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(16,45,40,.08)] active:scale-[0.985] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#176654] ${active ? "border-[#176654] bg-[#edf6f2] shadow-[0_0_0_1px_#176654]" : "border-slate-200 bg-white hover:border-emerald-700/40 hover:bg-[#fbfdfc]"}`}>
       <span className="flex items-start gap-3">
         <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition ${active ? "border-[#176654] bg-[#176654] text-white" : "border-slate-300 bg-white"}`}>{active && <CheckIcon className="h-3 w-3" />}</span>
         <span>
@@ -52,9 +52,7 @@ export function AssessmentWizard() {
   const [error, setError] = useState("");
   const [hydrated, setHydrated] = useState(false);
   const [restored, setRestored] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<ReturnType<typeof calculateAssessment> | null>(null);
-  const [deliveryStatus, setDeliveryStatus] = useState<"success" | "error">("success");
 
   const progress = (step / 8) * 100;
   const planningNeed = useMemo(() => calculatePlanningNeed(data), [data]);
@@ -68,7 +66,7 @@ export function AssessmentWizard() {
           return;
         }
         const parsed = JSON.parse(saved) as { data?: Partial<AssessmentData>; step?: number };
-        if (parsed.data) setData((current) => ({ ...current, ...parsed.data, consent: false }));
+        if (parsed.data) setData((current) => ({ ...current, ...parsed.data, profile: parsed.data?.profile || current.profile, consent: false }));
         if (parsed.step && parsed.step >= 1 && parsed.step <= 8) setStep(parsed.step);
         setRestored(true);
         setHydrated(true);
@@ -120,42 +118,14 @@ export function AssessmentWizard() {
     setError("");
   }
 
-  async function finish(event: FormEvent<HTMLFormElement>) {
+  function finish(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (step < 8) {
       next();
       return;
     }
-    if (!data.firstName || !/^\S+@\S+\.\S+$/.test(data.email) || !data.consent) {
-      setError("Renseignez votre prénom, un e-mail valide et votre consentement.");
-      return;
-    }
-
-    setSubmitting(true);
     const computed = calculateAssessment(data, files);
-    try {
-      const response = await fetch("/api/leads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          profile: data.profile ? profileLabels[data.profile] : "",
-          need: data.needs.map((need) => needCatalog[need].label).join(", "),
-          canton: data.canton,
-          firstName: data.firstName,
-          email: data.email,
-          phone: data.phone,
-          consent: data.consent,
-          website: "",
-          assessment: { score: computed.score, planningNeed: computed.planningNeed, coverage: data.coverage },
-          attribution: { landingPage: window.location.href, source: new URLSearchParams(window.location.search).get("utm_source") ?? "" },
-        }),
-      });
-      setDeliveryStatus(response.ok ? "success" : "error");
-    } catch {
-      setDeliveryStatus("error");
-    }
     setResult(computed);
-    setSubmitting(false);
     window.gtag?.("event", "assessment_complete", { dental_protection_score: computed.score });
     window.scrollTo({ top: 0, behavior: "auto" });
   }
@@ -169,7 +139,7 @@ export function AssessmentWizard() {
     setError("");
   }
 
-  if (result) return <ResultScreen data={data} files={files} result={result} deliveryStatus={deliveryStatus} onRestart={restart} />;
+  if (result) return <ResultScreen data={data} files={files} result={result} onRestart={restart} />;
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#071c19] text-white">
@@ -205,15 +175,15 @@ export function AssessmentWizard() {
         </aside>
 
         <section>
-          <div className="mb-5 flex items-end justify-between gap-4">
+          <div className="mb-4 flex items-center justify-between gap-4 rounded-2xl border border-white/[0.08] bg-white/[0.045] p-4 sm:p-5">
             <div>
               <p className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-[#b9f1dd]">Étape {step} sur 8</p>
               <p className="mt-1 text-sm font-semibold text-[#8da9a1]">{stepNames[step - 1]}</p>
             </div>
-            <span className="text-sm font-bold text-[#b9f1dd]">{Math.round(progress)}%</span>
+            <span className="rounded-full bg-[#b9f1dd] px-3 py-1.5 text-sm font-extrabold text-[#08241f]">{Math.round(progress)}%</span>
           </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-white/10" aria-label={`Progression ${Math.round(progress)} %`} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)}>
-            <div className="h-full rounded-full bg-gradient-to-r from-[#b9f1dd] to-[#f5a278] transition-[width] duration-500" style={{ width: `${progress}%` }} />
+          <div className="h-3 overflow-hidden rounded-full border border-white/10 bg-white/10 p-0.5 shadow-inner" aria-label={`Progression ${Math.round(progress)} %`} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)}>
+            <div className="h-full rounded-full bg-gradient-to-r from-[#b9f1dd] via-[#b9f1dd] to-[#f5a278] shadow-[0_0_18px_rgba(185,241,221,.3)] transition-[width] duration-500" style={{ width: `${progress}%` }} />
           </div>
           {restored && <p className="mt-3 text-right text-xs font-semibold text-slate-400">Progression restaurée</p>}
 
@@ -320,15 +290,15 @@ export function AssessmentWizard() {
 
                   {step === 8 && (
                     <div>
-                      <p className="assessment-kicker">Votre résultat est prêt</p>
-                      <h1 className="assessment-title">Où souhaitez-vous recevoir votre suivi ?</h1>
-                      <p className="assessment-intro">Vos coordonnées débloquent le score, les recommandations et le rapport PDF.</p>
-                      <div className="mt-7 grid gap-4">
-                        <div className="grid gap-4 sm:grid-cols-2"><label className="assessment-label">Prénom<input autoComplete="given-name" value={data.firstName} onChange={(event) => update("firstName", event.target.value)} className="form-control" /></label><label className="assessment-label">Téléphone <span className="font-normal text-slate-400">(facultatif)</span><input type="tel" inputMode="tel" autoComplete="tel" value={data.phone} onChange={(event) => update("phone", event.target.value)} className="form-control" /></label></div>
-                        <label className="assessment-label">E-mail<input type="email" inputMode="email" autoComplete="email" value={data.email} onChange={(event) => update("email", event.target.value)} className="form-control" /></label>
-                        <label className="flex items-start gap-3 rounded-2xl bg-[#f8faf9] p-4 text-xs leading-5 text-slate-500"><input type="checkbox" checked={data.consent} onChange={(event) => update("consent", event.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-[#176654]" /><span>J’accepte que VYDA SA utilise ces informations pour produire mon bilan et me recontacter à ce sujet. <Link href="/confidentialite" target="_blank" className="font-bold text-[#176654] underline underline-offset-2">Confidentialité</Link></span></label>
-                        <div className="grid grid-cols-2 gap-3 rounded-2xl border border-slate-200 p-4 text-xs text-slate-500"><span><strong className="block text-base text-[#102d28]">{data.needs.length}</strong> besoins</span><span><strong className="block text-base text-[#102d28]">{formatCurrency(planningNeed)}</strong> à planifier</span></div>
+                      <p className="assessment-kicker">Dernière étape</p>
+                      <h1 className="assessment-title">Votre Score Protection Dentaire est prêt.</h1>
+                      <p className="assessment-intro">Vérifiez votre synthèse avant de découvrir immédiatement votre niveau de protection.</p>
+                      <div className="mt-8 grid gap-4 sm:grid-cols-3">
+                        <div className="rounded-2xl border border-slate-200 bg-[#f8faf9] p-5"><span className="text-[0.65rem] font-bold uppercase tracking-[0.16em] text-slate-500">Profil</span><strong className="mt-2 block text-lg text-[#102d28]">{data.profile ? profileLabels[data.profile] : "—"}</strong></div>
+                        <div className="rounded-2xl border border-slate-200 bg-[#f8faf9] p-5"><span className="text-[0.65rem] font-bold uppercase tracking-[0.16em] text-slate-500">Priorités</span><strong className="mt-2 block text-lg text-[#102d28]">{data.needs.length} besoin{data.needs.length > 1 ? "s" : ""}</strong></div>
+                        <div className="rounded-2xl border border-slate-200 bg-[#f8faf9] p-5"><span className="text-[0.65rem] font-bold uppercase tracking-[0.16em] text-slate-500">Planification</span><strong className="mt-2 block text-lg text-[#102d28]">{formatCurrency(planningNeed)}</strong></div>
                       </div>
+                      <div className="mt-6 flex gap-3 rounded-2xl bg-[#e9f4ef] p-4 text-sm leading-6 text-[#29423d]"><ShieldIcon className="mt-0.5 h-5 w-5 shrink-0 text-[#176654]" /><p>Le score explique votre niveau de préparation. Il ne constitue ni un diagnostic, ni une offre d’assurance.</p></div>
                     </div>
                   )}
                 </div>
@@ -337,7 +307,7 @@ export function AssessmentWizard() {
             {error && <p className="assessment-step-enter mt-4 rounded-xl bg-red-50 p-3 text-sm font-bold text-red-700" role="alert">{error}</p>}
             <div className="mt-5 flex items-center justify-between gap-3">
               <button type="button" onClick={previous} disabled={step === 1} className="min-h-12 rounded-full border border-white/15 bg-white/[0.05] px-5 text-sm font-bold text-[#a9beb8] transition hover:bg-white/[0.1] hover:text-white disabled:invisible">Retour</button>
-              {step < 8 ? <button type="button" onClick={next} className="premium-button min-h-12 min-w-36 px-6 text-sm">Continuer <ArrowRightIcon className="h-4 w-4" /></button> : <button type="submit" disabled={submitting} className="premium-button min-h-12 min-w-48 px-6 text-sm disabled:opacity-60">{submitting ? "Calcul en cours…" : "Découvrir mon score"}<SparklesIcon className="h-4 w-4" /></button>}
+              {step < 8 ? <button type="button" onClick={next} className="premium-button min-h-12 min-w-36 px-6 text-sm">Continuer <ArrowRightIcon className="h-4 w-4" /></button> : <button type="submit" className="premium-button min-h-12 min-w-48 px-6 text-sm">Découvrir mon score<SparklesIcon className="h-4 w-4" /></button>}
             </div>
             <p className="mt-5 flex items-center justify-center gap-2 text-center text-xs text-[#78978f]"><ShieldIcon className="h-4 w-4" /> Confidentiel · Sans engagement · Résultat immédiat</p>
           </form>

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { normalizeSwissFrenchPhone } from "@/lib/phone";
 
 export const runtime = "nodejs";
 
@@ -108,7 +109,7 @@ export async function POST(request: Request) {
     canton: clean(payload.canton, 2).toUpperCase(),
     firstName: clean(payload.firstName, 80),
     email: clean(payload.email, 160).toLowerCase(),
-    phone: clean(payload.phone, 40),
+    phone: normalizeSwissFrenchPhone(clean(payload.phone, 40)) ?? "",
     consent: payload.consent === true,
     attribution: {
       source: clean(payload.attribution?.source, 100),
@@ -124,7 +125,7 @@ export async function POST(request: Request) {
     },
   };
 
-  if (!lead.profile || !lead.need || !validCantons.has(lead.canton) || !lead.firstName || !emailPattern.test(lead.email) || !lead.consent) {
+  if (!lead.profile || !lead.need || !validCantons.has(lead.canton) || !lead.firstName || !emailPattern.test(lead.email) || !lead.phone || !lead.consent) {
     return NextResponse.json({ error: "Informations incomplètes" }, { status: 422 });
   }
 
