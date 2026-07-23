@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AssessmentWizard } from "@/components/assessment/assessment-wizard";
+import { isDocumentStorageConfigured } from "@/lib/documents";
 
 export const metadata: Metadata = {
   title: "Bilan Protection Dentaire gratuit",
@@ -8,5 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function BilanPage() {
-  return <AssessmentWizard />;
+  return <AssessmentWizard storageConfigured={isDocumentStorageConfigured()} />;
 }

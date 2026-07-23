@@ -2,6 +2,7 @@
 
 import Script from "next/script";
 import { useEffect, useState } from "react";
+import { collectAttribution } from "@/lib/lead";
 
 const adsId = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID;
 
@@ -9,6 +10,7 @@ export function GoogleAds() {
   const [choice, setChoice] = useState<"accepted" | "declined" | null>(null);
 
   useEffect(() => {
+    collectAttribution();
     const saved = window.localStorage.getItem("vyda-analytics-consent");
     if (saved !== "accepted" && saved !== "declined") return;
     const timer = window.setTimeout(() => setChoice(saved), 0);

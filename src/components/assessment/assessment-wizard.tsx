@@ -13,13 +13,13 @@ import {
   needCatalog,
   profileLabels,
   type AssessmentData,
-  type AssessmentFiles,
   type NeedKey,
 } from "@/lib/dental-assessment";
+import { DEFAULT_DOCUMENT_MAX_FILES, emptyAssessmentDocuments, type AssessmentDocuments } from "@/lib/documents";
 
 const STORAGE_KEY = "vyda-dental-assessment-v1";
 const cantons = ["AG", "AI", "AR", "BE", "BL", "BS", "FR", "GE", "GL", "GR", "JU", "LU", "NE", "NW", "OW", "SG", "SH", "SO", "SZ", "TG", "TI", "UR", "VD", "VS", "ZG", "ZH"];
-const stepNames = ["Profil", "Situation", "Besoins", "Calculateur", "Couverture", "Préparation", "Documents", "Résultat"];
+const stepNames = ["Profil", "Situation", "Garanties", "Besoins", "Calculateur", "Préparation", "Documents", "Résultat"];
 const ResultScreen = dynamic(() => import("@/components/assessment/result-screen").then((module) => module.ResultScreen), {
   loading: () => <main className="flex min-h-screen items-center justify-center bg-[#071c19]"><p className="font-bold text-[#b9f1dd]">Préparation de votre résultat…</p></main>,
 });
@@ -45,10 +45,11 @@ function OptionButton({ active, children, description, onClick }: OptionButtonPr
   );
 }
 
-export function AssessmentWizard() {
+export function AssessmentWizard({ storageConfigured }: { storageConfigured: boolean }) {
   const [step, setStep] = useState(1);
   const [data, setData] = useState<AssessmentData>(initialAssessment);
-  const [files, setFiles] = useState<AssessmentFiles>({ contract: null, quote: null });
+  const [documents, setDocuments] = useState<AssessmentDocuments>(emptyAssessmentDocuments);
+  const [uploadSessionId, setUploadSessionId] = useState("");
   const [error, setError] = useState("");
   const [hydrated, setHydrated] = useState(false);
   const [restored, setRestored] = useState(false);
@@ -58,22 +59,28 @@ export function AssessmentWizard() {
   const progress = (step / 8) * 100;
   const timeRemaining = step <= 4 ? "moins de 2 minutes" : step <= 7 ? "moins d’1 minute" : "quelques secondes";
   const planningNeed = useMemo(() => calculatePlanningNeed(data), [data]);
+  const documentCount = documents.contracts.length + documents.quotes.length;
+  const remainingDocumentSlots = Math.max(0, DEFAULT_DOCUMENT_MAX_FILES - documentCount);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       try {
         const saved = window.sessionStorage.getItem(STORAGE_KEY);
         if (!saved) {
+          setUploadSessionId(crypto.randomUUID());
           setHydrated(true);
           return;
         }
-        const parsed = JSON.parse(saved) as { data?: Partial<AssessmentData>; step?: number };
-        if (parsed.data) setData((current) => ({ ...current, ...parsed.data, profile: parsed.data?.profile || current.profile, consent: false }));
+        const parsed = JSON.parse(saved) as { data?: Partial<AssessmentData>; documents?: AssessmentDocuments; uploadSessionId?: string; step?: number };
+        if (parsed.data) setData((current) => ({ ...current, ...parsed.data, profile: parsed.data?.profile || current.profile }));
+        if (parsed.documents) setDocuments(parsed.documents);
+        setUploadSessionId(parsed.uploadSessionId || crypto.randomUUID());
         if (parsed.step && parsed.step >= 1 && parsed.step <= 8) setStep(parsed.step);
         setRestored(true);
         setHydrated(true);
       } catch {
         window.sessionStorage.removeItem(STORAGE_KEY);
+        setUploadSessionId(crypto.randomUUID());
         setHydrated(true);
       }
     }, 0);
@@ -82,8 +89,9 @@ export function AssessmentWizard() {
 
   useEffect(() => {
     if (!hydrated) return;
-    window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ data: { ...data, consent: false }, step }));
-  }, [data, hydrated, step]);
+    if (!uploadSessionId) return;
+    window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ data, documents, uploadSessionId, step }));
+  }, [data, documents, hydrated, step, uploadSessionId]);
 
   function update<K extends keyof AssessmentData>(field: K, value: AssessmentData[K]) {
     setData((current) => ({ ...current, [field]: value }));
@@ -95,12 +103,12 @@ export function AssessmentWizard() {
   }
 
   function stepIsValid(currentStep: number) {
-    if (currentStep === 1) return Boolean(data.profile);
-    if (currentStep === 2) return Boolean(data.canton && data.ageGroup);
-    if (currentStep === 3) return data.needs.length > 0;
-    if (currentStep === 4) return (data.customBudget || planningNeed) > 0;
-    if (currentStep === 5) return Boolean(data.coverage);
-    if (currentStep === 6) return Boolean(data.prevention && data.reserve && data.timeline);
+    if (currentStep === 1) return Boolean(data.profile && (data.profile !== "child" || data.childAge) && (data.profile !== "unborn" || data.expectedBirthDate));
+    if (currentStep === 2) return Boolean(data.canton && data.ambulatoryCoverage);
+    if (currentStep === 3) return Boolean(data.coverage && data.verifyGuarantees !== null && (data.ambulatoryCoverage !== "yes" || data.dentalParticipation));
+    if (currentStep === 4) return data.needs.length > 0;
+    if (currentStep === 5) return (data.customBudget || planningNeed) > 0;
+    if (currentStep === 6) return Boolean(data.prevention && data.reserve && data.timeline && data.crossBorderCare);
     return true;
   }
 
@@ -131,7 +139,7 @@ export function AssessmentWizard() {
       next();
       return;
     }
-    const computed = calculateAssessment(data, files);
+    const computed = calculateAssessment(data, documents);
     setResult(computed);
     window.gtag?.("event", "assessment_complete", { dental_protection_score: computed.score });
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -140,13 +148,14 @@ export function AssessmentWizard() {
   function restart() {
     window.sessionStorage.removeItem(STORAGE_KEY);
     setData(initialAssessment);
-    setFiles({ contract: null, quote: null });
+    setDocuments(emptyAssessmentDocuments);
+    setUploadSessionId(crypto.randomUUID());
     setStep(1);
     setResult(null);
     setError("");
   }
 
-  if (result) return <ResultScreen data={data} files={files} result={result} onRestart={restart} />;
+  if (result) return <ResultScreen data={data} documents={documents} uploadSessionId={uploadSessionId} result={result} onRestart={restart} />;
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#071c19] text-white">
@@ -202,32 +211,56 @@ export function AssessmentWizard() {
                   {step === 1 && (
                     <div>
                       <p className="assessment-kicker">Commençons simplement</p>
-                      <h1 className="assessment-title">Pour qui réalisez-vous ce bilan ?</h1>
+                      <h1 className="assessment-title">Le bilan concerne :</h1>
                       <p className="assessment-intro">Le score s’adapte à la personne concernée.</p>
                       <div className="mt-8 grid gap-3 sm:grid-cols-3">
                         {([
-                          ["adult", "Pour moi", "Un adulte"],
-                          ["child", "Pour un enfant", "Préparer ses besoins futurs"],
-                          ["family", "Pour ma famille", "Plusieurs personnes à protéger"],
+                          ["adult", "Un adulte", "Protection actuelle et besoins futurs"],
+                          ["child", "Un enfant", "Admission et orthodontie"],
+                          ["unborn", "Un enfant à naître", "Souscription prénatale"],
                         ] as const).map(([value, label, description]) => <OptionButton key={value} active={data.profile === value} onClick={() => update("profile", value)} description={description}>{label}</OptionButton>)}
                       </div>
+                      {data.profile === "child" && <label className="assessment-label mt-6">Âge de l’enfant<input type="number" min="0" max="17" inputMode="numeric" value={data.childAge} onChange={(event) => update("childAge", event.target.value)} className="form-control mt-2" placeholder="Ex. 8" /></label>}
+                      {data.profile === "unborn" && <label className="assessment-label mt-6">Date prévue de naissance<input type="date" value={data.expectedBirthDate} onChange={(event) => update("expectedBirthDate", event.target.value)} className="form-control mt-2" /></label>}
                     </div>
                   )}
 
                   {step === 2 && (
                     <div>
                       <p className="assessment-kicker">Votre situation</p>
-                      <h1 className="assessment-title">Quelques repères pour personnaliser le bilan.</h1>
-                      <p className="assessment-intro">Deux repères pour personnaliser l’analyse.</p>
-                      <div className="mt-8 grid gap-5 sm:grid-cols-2">
-                        <label className="assessment-label">Canton de résidence<select value={data.canton} onChange={(event) => update("canton", event.target.value)} className="form-control"><option value="">Choisir</option>{cantons.map((canton) => <option key={canton}>{canton}</option>)}</select></label>
-                        <label className="assessment-label">Tranche d’âge<select value={data.ageGroup} onChange={(event) => update("ageGroup", event.target.value)} className="form-control"><option value="">Choisir</option><option>0–6 ans</option><option>7–12 ans</option><option>13–17 ans</option><option>18–34 ans</option><option>35–54 ans</option><option>55 ans et plus</option><option>Plusieurs tranches d’âge</option></select></label>
+                      <h1 className="assessment-title">Votre situation actuelle.</h1>
+                      <p className="assessment-intro">Deux repères utiles pour l’analyse.</p>
+                      <label className="assessment-label mt-8">Canton de résidence<select value={data.canton} onChange={(event) => update("canton", event.target.value)} className="form-control"><option value="">Choisir</option>{cantons.map((canton) => <option key={canton}>{canton}</option>)}</select></label>
+                      <div className="mt-7">
+                        <p className="assessment-label">Possédez-vous déjà une assurance complémentaire ambulatoire ?</p>
+                        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                          {(["yes", "no", "unknown"] as const).map((value) => <OptionButton key={value} active={data.ambulatoryCoverage === value} onClick={() => update("ambulatoryCoverage", value)}>{value === "yes" ? "Oui" : value === "no" ? "Non" : "Je ne sais pas"}</OptionButton>)}
+                        </div>
                       </div>
-                      {data.profile === "family" && <label className="assessment-label mt-5">Nombre de personnes concernées<div className="mt-2 flex items-center gap-4"><input type="range" min="2" max="6" value={data.householdSize} onChange={(event) => update("householdSize", Number(event.target.value))} className="accent-[#176654]" /><span className="flex h-10 min-w-10 items-center justify-center rounded-xl bg-[#edf6f2] font-bold text-[#176654]">{data.householdSize}</span></div></label>}
                     </div>
                   )}
 
                   {step === 3 && (
+                    <div>
+                      <p className="assessment-kicker">Vos garanties</p>
+                      <h1 className="assessment-title">Que savez-vous de votre couverture ?</h1>
+                      {data.ambulatoryCoverage === "yes" && <div className="mt-8"><p className="assessment-label">Votre contrat mentionne-t-il une participation aux soins dentaires ou à l’orthodontie ?</p><div className="mt-3 grid gap-3 sm:grid-cols-3">{(["yes", "no", "unknown"] as const).map((value) => <OptionButton key={value} active={data.dentalParticipation === value} onClick={() => update("dentalParticipation", value)}>{value === "yes" ? "Oui" : value === "no" ? "Non" : "Je ne sais pas"}</OptionButton>)}</div></div>}
+                      <div className="mt-7">
+                        <p className="assessment-label">Comment êtes-vous couvert pour les soins dentaires aujourd’hui ?</p>
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                          {([
+                            ["supplementary", "Complémentaire dentaire", "Une garantie spécifique est en place"],
+                            ["basic", "Assurance de base uniquement", "Aucune complémentaire identifiée"],
+                            ["none", "Aucune couverture", "Financement direct des soins"],
+                            ["unknown", "Je ne sais pas", "Mes garanties ne sont pas claires"],
+                          ] as const).map(([value, label, description]) => <OptionButton key={value} active={data.coverage === value} onClick={() => update("coverage", value)} description={description}>{label}</OptionButton>)}
+                        </div>
+                      </div>
+                      <div className="mt-7"><p className="assessment-label">Souhaitez-vous que VYDA vérifie vos garanties actuelles ?</p><div className="mt-3 grid gap-3 sm:grid-cols-2">{([true, false] as const).map((value) => <OptionButton key={String(value)} active={data.verifyGuarantees === value} onClick={() => update("verifyGuarantees", value)}>{value ? "Oui" : "Non"}</OptionButton>)}</div></div>
+                    </div>
+                  )}
+
+                  {step === 4 && (
                     <div>
                       <p className="assessment-kicker">Vos priorités</p>
                       <h1 className="assessment-title">Quels besoins souhaitez-vous anticiper ?</h1>
@@ -239,7 +272,7 @@ export function AssessmentWizard() {
                     </div>
                   )}
 
-                  {step === 4 && (
+                  {step === 5 && (
                     <div>
                       <p className="assessment-kicker">Calculateur de besoins</p>
                       <h1 className="assessment-title">Quel montant souhaitez-vous pouvoir absorber ?</h1>
@@ -254,23 +287,6 @@ export function AssessmentWizard() {
                     </div>
                   )}
 
-                  {step === 5 && (
-                    <div>
-                      <p className="assessment-kicker">Votre couverture</p>
-                      <h1 className="assessment-title">Comment êtes-vous couvert aujourd’hui ?</h1>
-                      <p className="assessment-intro">Indiquez uniquement votre couverture actuelle.</p>
-                      <div className="mt-8 grid gap-3 sm:grid-cols-2">
-                        {([
-                          ["supplementary", "J’ai une complémentaire dentaire", "Une garantie spécifique est déjà en place"],
-                          ["basic", "Assurance de base uniquement", "Aucune complémentaire identifiée"],
-                          ["none", "Aucune couverture", "Les soins sont financés directement"],
-                          ["unknown", "Je ne sais pas", "Mes garanties ne sont pas claires"],
-                        ] as const).map(([value, label, description]) => <OptionButton key={value} active={data.coverage === value} onClick={() => update("coverage", value)} description={description}>{label}</OptionButton>)}
-                      </div>
-                      {data.coverage === "supplementary" && <label className="mt-6 flex items-start gap-3 rounded-2xl bg-[#f3f7f4] p-4 text-sm leading-6 text-slate-600"><input type="checkbox" checked={data.knowsCoverage} onChange={(event) => update("knowsCoverage", event.target.checked)} className="mt-1 h-4 w-4 accent-[#176654]" /><span>Je connais mon taux de remboursement, mon plafond annuel et mon délai d’attente.</span></label>}
-                    </div>
-                  )}
-
                   {step === 6 && (
                     <div>
                       <p className="assessment-kicker">Votre préparation</p>
@@ -279,6 +295,7 @@ export function AssessmentWizard() {
                         <label className="assessment-label">À quelle fréquence consultez-vous pour la prévention ?<select value={data.prevention} onChange={(event) => update("prevention", event.target.value as AssessmentData["prevention"])} className="form-control"><option value="">Choisir</option><option value="twice">Deux fois par an</option><option value="yearly">Une fois par an</option><option value="irregular">Irrégulièrement</option><option value="never">Jamais ou presque</option></select></label>
                         <label className="assessment-label">Votre réserve actuelle pourrait-elle absorber ce besoin ?<select value={data.reserve} onChange={(event) => update("reserve", event.target.value as AssessmentData["reserve"])} className="form-control"><option value="">Choisir</option><option value="comfortable">Oui, confortablement</option><option value="partial">En partie</option><option value="limited">Très difficilement</option><option value="none">Non</option></select></label>
                         <label className="assessment-label">Quand pensez-vous avoir besoin de soins ?<select value={data.timeline} onChange={(event) => update("timeline", event.target.value as AssessmentData["timeline"])} className="form-control"><option value="">Choisir</option><option value="preventive">Aucun soin prévu, démarche préventive</option><option value="year">Dans les 12 prochains mois</option><option value="soon">Dans les 3 prochains mois</option><option value="ongoing">Traitement conseillé ou déjà commencé</option></select></label>
+                        <div><p className="assessment-label">Êtes-vous ouvert à des soins dans un pays frontalier si votre contrat le permet ?</p><div className="mt-3 grid gap-3 sm:grid-cols-3">{(["yes", "no", "consider"] as const).map((value) => <OptionButton key={value} active={data.crossBorderCare === value} onClick={() => update("crossBorderCare", value)}>{value === "yes" ? "Oui" : value === "no" ? "Non" : "À étudier"}</OptionButton>)}</div></div>
                       </div>
                     </div>
                   )}
@@ -286,13 +303,13 @@ export function AssessmentWizard() {
                   {step === 7 && (
                     <div>
                       <p className="assessment-kicker">Documents</p>
-                      <h1 className="assessment-title">Préparez une future analyse détaillée.</h1>
-                      <p className="assessment-intro">Facultatif. Les PDF restent sur votre appareil.</p>
+                      <h1 className="assessment-title">Transmettez les documents utiles.</h1>
+                      <p className="assessment-intro">Facultatif. PDF uniquement, stockage privé et suppression automatique.</p>
                       <div className="mt-8 grid gap-4">
-                        <FileDropzone id="contract-upload" label="Ajouter mon contrat d’assurance" description="Conditions, tableau des prestations ou police d’assurance" file={files.contract} onChange={(contract) => setFiles((current) => ({ ...current, contract }))} />
-                        <FileDropzone id="quote-upload" label="Ajouter un devis de dentiste" description="Devis ou plan de traitement à conserver avec le bilan" file={files.quote} onChange={(quote) => setFiles((current) => ({ ...current, quote }))} />
+                        {data.verifyGuarantees && <FileDropzone id="contract-upload" label="Ajouter mes polices d’assurance" description="Conditions, tableaux de prestations ou polices à vérifier" category="contract" documents={documents.contracts} uploadSessionId={uploadSessionId} storageConfigured={storageConfigured} remainingSlots={remainingDocumentSlots} onChange={(contracts) => setDocuments((current) => ({ ...current, contracts }))} />}
+                        <FileDropzone id="quote-upload" label="Ajouter un devis de dentiste" description="Devis ou plan de traitement à joindre au bilan" category="quote" documents={documents.quotes} uploadSessionId={uploadSessionId} storageConfigured={storageConfigured} remainingSlots={remainingDocumentSlots} onChange={(quotes) => setDocuments((current) => ({ ...current, quotes }))} />
                       </div>
-                      <div className="mt-5 flex gap-3 rounded-2xl bg-[#fff4ef] p-4 text-xs leading-5 text-[#783c22]"><ShieldIcon className="h-5 w-5 shrink-0" /><p>Par sécurité, le navigateur ne peut pas restaurer ces fichiers après un rechargement. Leurs noms figurent uniquement dans le rapport de cette session.</p></div>
+                      {storageConfigured && <div className="mt-5 flex gap-3 rounded-2xl bg-[#e9f4ef] p-4 text-xs leading-5 text-[#29423d]"><ShieldIcon className="h-5 w-5 shrink-0 text-[#176654]" /><p>Les documents transmis sont privés, jamais exposés par une URL publique permanente, et supprimés selon la durée de conservation configurée.</p></div>}
                     </div>
                   )}
 

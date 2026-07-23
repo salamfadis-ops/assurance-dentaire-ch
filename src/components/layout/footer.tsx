@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Container } from "@/components/layout/container";
 import { ToothIcon } from "@/components/ui/icons";
+import { VydaMark } from "@/components/vyda-mark";
 
 export function Footer() {
   return (
@@ -13,6 +14,7 @@ export function Footer() {
               <span className="font-extrabold tracking-tight text-white">assurance-dentaire<span className="text-[#f5a278]">.ch</span></span>
             </Link>
             <p className="mt-4 text-sm leading-6 text-[#89a29b]">Une plateforme suisse d’information et d’analyse proposée par VYDA SA. Nous ne sommes ni une caisse-maladie ni un assureur.</p>
+            <div className="mt-6"><VydaMark inverse /></div>
           </div>
           <div>
             <h2 className="text-sm font-bold text-white">Navigation</h2>
@@ -24,11 +26,16 @@ export function Footer() {
             </ul>
           </div>
           <div>
-            <h2 className="text-sm font-bold text-white">Informations</h2>
+            <h2 className="text-sm font-bold text-white">VYDA SA</h2>
             <ul className="mt-4 space-y-3 text-sm text-[#89a29b]">
+              <li>Meyrin, Genève</li>
+              <li>Cabinet de courtage indépendant</li>
+              <li>Conseiller enregistré FINMA</li>
+              <li><a href="mailto:contact@vyda.ch" className="hover:text-white">contact@vyda.ch</a></li>
+              <li><a href="tel:+41794809910" className="hover:text-white">+41 79 480 99 10</a></li>
+              <li><a href="https://vyda.ch" target="_blank" rel="noreferrer" className="hover:text-white">vyda.ch</a></li>
               <li><Link href="/mentions-legales" className="hover:text-white">Mentions légales</Link></li>
               <li><Link href="/confidentialite" className="hover:text-white">Confidentialité</Link></li>
-              <li><a href="mailto:contact@assurance-dentaire.ch" className="hover:text-white">Contact</a></li>
             </ul>
           </div>
         </div>

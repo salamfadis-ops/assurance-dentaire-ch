@@ -2,8 +2,12 @@ import type { Metadata } from "next";
 import { Container } from "@/components/layout/container";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
+import { LeadForm } from "@/components/lead-form";
 import { MobileStickyCta } from "@/components/mobile-sticky-cta";
 import { JourneyTimeline, ProtectionVisual } from "@/components/premium/product-showcase";
+import { VydaMark } from "@/components/vyda-mark";
+import { insurers } from "@/lib/insurers";
+import { isDocumentStorageConfigured } from "@/lib/documents";
 import {
   ArrowRightIcon,
   ChartIcon,
@@ -28,7 +32,7 @@ const criteria = [
   ["Conditions d’admission", "Âge, questionnaire de santé et traitements déjà conseillés."],
 ] as const;
 
-const faqs = [
+const baseFaqs = [
   {
     question: "L’assurance de base couvre-t-elle les soins dentaires ?",
     answer: "En principe, non. Elle intervient dans des situations médicales précises. Les contrôles, soins courants et traitements orthodontiques sont généralement à votre charge ou relèvent d’une assurance complémentaire.",
@@ -41,11 +45,21 @@ const faqs = [
     question: "Le Score Protection Dentaire est-il une recommandation d’assurance ?",
     answer: "Non. C’est un indicateur transparent de votre niveau de préparation. Il ne remplace ni les conditions contractuelles, ni un conseil médical, ni une décision d’acceptation par un assureur.",
   },
-  {
-    question: "Mes documents sont-ils envoyés à un serveur ?",
-    answer: "Non dans cette version. Les PDF ajoutés restent temporairement dans votre navigateur et servent uniquement à documenter votre bilan pendant la session.",
-  },
+  { question: "Une complémentaire ambulatoire peut-elle couvrir des soins dentaires ?", answer: "Selon le contrat, elle peut prévoir une participation aux soins dentaires ou à l’orthodontie. Le taux, le plafond, la franchise et les conditions doivent être vérifiés." },
+  { question: "Comment l’orthodontie est-elle remboursée ?", answer: "La prise en charge varie selon l’âge d’admission, le délai d’attente, le taux de remboursement et le plafond total ou annuel prévu par le contrat." },
+  { question: "Les soins dans un pays frontalier sont-ils admis ?", answer: "Certaines compagnies les acceptent sous conditions. Il faut confirmer le pays, le tarif reconnu, les justificatifs et l’accord préalable éventuel." },
+  { question: "Pourquoi assurer un jeune enfant tôt ?", answer: "Selon les conditions de la compagnie, une admission précoce peut simplifier le questionnaire ou éviter un contrôle dentaire préalable." },
+  { question: "La souscription prénatale est-elle possible ?", answer: "Certaines compagnies proposent une admission avant la naissance avec des conditions spécifiques. Les modalités doivent être contrôlées avant la date limite." },
+  { question: "Que signifient quote-part et plafond ?", answer: "La quote-part reste à votre charge après remboursement. Le plafond limite le montant versé par l’assureur sur une période ou pour un traitement." },
 ];
+
+const littleKnownFacts = [
+  ["Votre complémentaire ambulatoire couvre peut-être déjà certains soins", "Selon le contrat, certains soins dentaires ou frais d’orthodontie peuvent déjà être pris en charge par une assurance complémentaire ambulatoire."],
+  ["Il reste généralement une part à votre charge", "Le remboursement dépend du taux de prise en charge, du plafond, de la franchise et des conditions de la compagnie."],
+  ["Les soins à l’étranger sont parfois admis", "Certaines compagnies autorisent les traitements dans des pays frontaliers. Des coûts plus faibles peuvent alors réduire le reste à charge, notamment pour l’orthodontie."],
+  ["Assurer un enfant tôt peut simplifier l’admission", "Selon les compagnies, une souscription avant un certain âge peut nécessiter un questionnaire simplifié et éviter un contrôle dentaire préalable."],
+  ["La souscription prénatale peut offrir des avantages", "Certaines compagnies proposent, selon leurs conditions en vigueur, des mois de primes offerts ou des conditions préférentielles."],
+] as const;
 
 function ContractIllustration() {
   return (
@@ -73,6 +87,13 @@ function ContractIllustration() {
 }
 
 export default function Home() {
+  const storageConfigured = isDocumentStorageConfigured();
+  const faqs = [...baseFaqs, {
+    question: "Puis-je transmettre mes contrats et devis PDF ?",
+    answer: storageConfigured
+      ? "Oui. Les documents que vous choisissez de transmettre sont envoyés de manière sécurisée afin qu’un conseiller VYDA puisse analyser vos garanties. Ils ne sont jamais rendus publics."
+      : "L’envoi sécurisé de documents n’est pas encore activé sur cette version.",
+  }];
   const faqStructuredData = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -100,8 +121,9 @@ export default function Home() {
               <p className="mt-7 max-w-[38rem] text-lg leading-8 text-[#a9beb8] sm:text-xl">Votre score, vos priorités et un conseiller VYDA. En 2 minutes.</p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <a href="/bilan" className="premium-button group min-h-14 px-7 text-[0.95rem]">
-                  Être rappelé gratuitement <ArrowRightIcon className="h-4 w-4 transition duration-300 group-hover:translate-x-1" />
+                  Faire mon bilan gratuit <ArrowRightIcon className="h-4 w-4 transition duration-300 group-hover:translate-x-1" />
                 </a>
+                <a href="#rappel" className="inline-flex min-h-14 items-center justify-center rounded-full border border-white/15 bg-white/[0.055] px-7 text-[0.95rem] font-extrabold text-white transition hover:-translate-y-0.5 hover:border-white/30 hover:bg-white/[0.09]">Être rappelé gratuitement</a>
               </div>
               <div className="mt-7 flex flex-wrap gap-x-5 gap-y-3 text-xs font-semibold text-[#9db3ad]">
                 {["100 % gratuit", "Sans engagement", "Réponse sous 24 h", "Conseiller indépendant FINMA"].map((item) => <span key={item} className="flex items-center gap-2"><CheckIcon className="h-3.5 w-3.5 text-[#a8efd5]" />{item}</span>)}
@@ -114,11 +136,37 @@ export default function Home() {
 
         <section className="border-b border-[#dfe7e3] bg-[#f4f6f2] py-5" aria-label="Engagements VYDA">
           <Container className="grid grid-cols-2 gap-x-5 gap-y-4 sm:flex sm:items-center sm:justify-between">
-            <p className="col-span-2 text-[0.62rem] font-extrabold uppercase tracking-[0.22em] text-[#526a64] sm:col-span-1">Conçu en Suisse par VYDA SA</p>
+            <div className="col-span-2 flex items-center gap-3 sm:col-span-1"><VydaMark compact /><p className="text-[0.62rem] font-extrabold uppercase tracking-[0.18em] text-[#526a64]">Un service proposé par VYDA SA</p></div>
             {[[LockIcon, "Données confidentielles"], [ShieldIcon, "Méthode transparente"], [SparklesIcon, "Sans jargon"]].map(([Icon, label]) => {
               const TrustIcon = Icon as typeof ShieldIcon;
               return <span key={label as string} className="flex items-center gap-2 text-xs font-bold text-[#29443d]"><TrustIcon className="h-4 w-4 text-[#176654]" />{label as string}</span>;
             })}
+          </Container>
+        </section>
+
+        <section className="bg-white py-16 sm:py-24">
+          <Container>
+            <div className="max-w-4xl"><p className="eyebrow">À connaître avant de comparer</p><h2 className="section-title mt-5">Ce que peu de personnes savent sur l’assurance dentaire</h2></div>
+            <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+              {littleKnownFacts.map(([title, description], index) => (
+                <article key={title} className={`premium-card p-6 ${index === 2 ? "bg-[#102d28] text-white" : "bg-[#f5f7f4] text-[#102d28]"}`}>
+                  <span className={`text-xs font-extrabold ${index === 2 ? "text-[#b9f1dd]" : "text-[#176654]"}`}>0{index + 1}</span>
+                  <h3 className="mt-5 text-lg font-bold leading-6">{title}</h3>
+                  <p className={`mt-3 text-sm leading-6 ${index === 2 ? "text-[#b9c9c5]" : "text-[#61736e]"}`}>{description}</p>
+                </article>
+              ))}
+            </div>
+            <p className="mt-5 text-xs text-[#526a64]">Les conditions varient selon les compagnies et les produits.</p>
+          </Container>
+        </section>
+
+        <section className="border-y border-[#dfe7e3] bg-[#f4f6f2] py-14 sm:py-20">
+          <Container>
+            <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-end"><div><p className="eyebrow">Accès au marché</p><h2 className="mt-4 font-display text-4xl font-semibold tracking-[-0.05em] text-[#102d28] sm:text-5xl">Accès à plusieurs assureurs, une seule analyse</h2></div><p className="section-intro">VYDA compare les solutions disponibles selon votre situation et vos besoins.</p></div>
+            <ul className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8" aria-label="Assureurs accessibles">
+              {insurers.map((insurer) => <li key={insurer.name} className="flex min-h-20 items-center justify-center rounded-2xl border border-[#dce5e0] bg-white px-3 text-center text-sm font-extrabold text-[#29443d] shadow-[0_8px_25px_rgba(8,35,30,.035)]" aria-label={insurer.logoAlt}>{insurer.name}</li>)}
+            </ul>
+            <p className="mt-5 text-xs text-[#526a64]">Accès direct ou via notre distributeur selon la compagnie.</p>
           </Container>
         </section>
 
@@ -212,6 +260,13 @@ export default function Home() {
           </Container>
         </section>
 
+        <section id="rappel" className="scroll-mt-24 overflow-hidden bg-[#071c19] py-16 sm:py-24">
+          <Container className="grid items-center gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:gap-20">
+            <div className="text-white"><p className="eyebrow !text-[#b9f1dd]">Un échange humain</p><h2 className="mt-5 font-display text-5xl font-semibold leading-[1] tracking-[-0.055em] sm:text-6xl">Une question précise ? Parlons-en.</h2><p className="mt-6 max-w-xl text-lg leading-8 text-[#a9beb8]">Votre demande arrive directement chez VYDA. Pas de centre d’appel, pas de vente automatique.</p><div className="mt-8 space-y-3 text-sm font-semibold text-[#d5e3df]"><p><a href="tel:+41794809910" className="transition hover:text-white">+41 79 480 99 10</a></p><p><a href="mailto:contact@vyda.ch" className="transition hover:text-white">contact@vyda.ch</a></p></div></div>
+            <LeadForm />
+          </Container>
+        </section>
+
         <section className="bg-white py-16 sm:py-24">
           <Container>
             <div className="premium-cta relative overflow-hidden rounded-[2.5rem] bg-[#176654] px-6 py-16 text-center text-white sm:px-12 sm:py-24">
@@ -221,7 +276,7 @@ export default function Home() {
                 <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#c2f3e1]">Votre protection mérite d’être claire</p>
                 <h2 className="mt-5 font-display text-4xl font-semibold leading-[1.02] tracking-[-0.055em] sm:text-6xl">En deux minutes, vous saurez quoi vérifier.</h2>
                 <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-[#d5e8e2]">100 % gratuit. Sans engagement. Réponse sous 24 h.</p>
-                <a href="/bilan" className="group mt-9 inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-white px-7 text-sm font-extrabold text-[#125444] shadow-[0_18px_50px_rgba(5,35,29,.25)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(5,35,29,.32)]">Être rappelé gratuitement <ArrowRightIcon className="h-4 w-4 transition group-hover:translate-x-1" /></a>
+                <a href="/bilan" className="group mt-9 inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-white px-7 text-sm font-extrabold text-[#125444] shadow-[0_18px_50px_rgba(5,35,29,.25)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(5,35,29,.32)]">Faire mon bilan gratuit <ArrowRightIcon className="h-4 w-4 transition group-hover:translate-x-1" /></a>
               </div>
             </div>
           </Container>

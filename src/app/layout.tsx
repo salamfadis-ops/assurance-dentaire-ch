@@ -48,7 +48,7 @@ const structuredData = {
   contactPoint: {
     "@type": "ContactPoint",
     contactType: "customer service",
-    email: "contact@assurance-dentaire.ch",
+    email: "contact@vyda.ch",
     availableLanguage: ["French"],
   },
 };

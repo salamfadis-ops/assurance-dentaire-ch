@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
-import { createDentalReport, type ReportFiles } from "@/lib/dental-report";
-import type { AssessmentData, AssessmentResult } from "@/lib/dental-assessment";
+import { createProspectReport } from "@/lib/dental-report";
+import { calculateAssessment, type AssessmentData } from "@/lib/dental-assessment";
+import type { AssessmentDocuments } from "@/lib/documents";
 
 export const runtime = "nodejs";
 
 type ReportPayload = {
   data?: AssessmentData;
-  result?: AssessmentResult;
-  files?: ReportFiles;
+  documents?: AssessmentDocuments;
 };
 
 export async function POST(request: Request) {
@@ -21,12 +21,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Requête invalide" }, { status: 400 });
   }
 
-  if (!payload.data || !payload.result || !payload.files || !payload.data.firstName || payload.result.score < 0 || payload.result.score > 100) {
+  if (!payload.data || !payload.documents || !payload.data.profile || !payload.data.canton || !payload.data.needs?.length) {
     return NextResponse.json({ error: "Données incomplètes" }, { status: 422 });
   }
 
   try {
-    const pdf = createDentalReport(payload.data, payload.result, payload.files);
+    const result = calculateAssessment(payload.data, payload.documents);
+    const pdf = createProspectReport(payload.data, result, payload.documents);
     return new Response(pdf, {
       status: 200,
       headers: {
