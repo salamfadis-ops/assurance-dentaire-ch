@@ -37,7 +37,7 @@ pnpm build
 
 ## Documents privés
 
-La solution choisie est Vercel Blob en mode **Private**. Les PDF sont envoyés directement du navigateur vers Blob à l’aide d’un jeton court généré côté serveur. Le jeton limite le type MIME à `application/pdf`, la taille et le chemin. Un bilan accepte au maximum cinq fichiers.
+La solution choisie est Vercel Blob en mode **Private**. Les PDF sont envoyés directement du navigateur vers Blob à l’aide d’un jeton court généré côté serveur. Le jeton limite le type MIME à `application/pdf`, la taille et le chemin. Un bilan accepte au maximum cinq fichiers. Avant l’envoi des notifications, `/api/leads` conserve également une copie JSON privée et idempotente du lead. Si Resend et le webhook échouent, cette copie permet de répondre `202` sans perdre la demande.
 
 Sans stockage configuré, les contrôles sont désactivés et l’interface affiche explicitement que l’envoi n’est pas disponible. Aucun document n’est stocké dans Git ou dans un répertoire public.
 
@@ -54,6 +54,7 @@ Copier `.env.example` vers `.env.local`. Ne jamais exposer les variables serveur
 | `LEADS_FROM_EMAIL` | Expéditeur appartenant à un domaine vérifié dans Resend |
 | `LEADS_WEBHOOK_URL` | Alternative à Resend : endpoint HTTPS du CRM |
 | `BLOB_READ_WRITE_TOKEN` | Accès au store Blob privé |
+| `VERCEL_OIDC_TOKEN` | Jeton OIDC fourni automatiquement par Vercel quand ce mode est activé |
 | `BLOB_STORE_ID` | Identifiant du store pour l’authentification OIDC |
 | `DOCUMENT_MAX_SIZE_MB` | Limite par PDF, `10` par défaut |
 | `LEAD_DOCUMENT_RETENTION_DAYS` | Conservation, `30` jours par défaut |
@@ -67,6 +68,7 @@ Copier `.env.example` vers `.env.local`. Ne jamais exposer les variables serveur
 
 1. Importer `salamfadis-ops/assurance-dentaire-ch` dans Vercel.
 2. Définir les variables d’environnement pour Production et Preview.
+   Au moins `RESEND_API_KEY` ou `LEADS_WEBHOOK_URL` doit être présent. Le store Blob est fortement recommandé comme sauvegarde de secours.
 3. Dans **Storage**, créer un store Blob avec l’accès **Private** et le connecter au projet.
 4. Vérifier le domaine expéditeur dans Resend et renseigner `RESEND_API_KEY` et `LEADS_FROM_EMAIL`.
 5. Définir un `CRON_SECRET` aléatoire. Le cron de purge est déclaré dans `vercel.json`.

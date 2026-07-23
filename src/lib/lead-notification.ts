@@ -11,6 +11,7 @@ export type DeliveryAttempt = {
   delivered: boolean;
   status?: number;
   error?: "not_configured" | "request_failed" | "provider_rejected";
+  detail?: string;
 };
 
 function escapeHtml(value: string) {
@@ -77,6 +78,7 @@ async function deliverWithResend(lead: ValidatedLead, apiKey: string) {
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json", "Idempotency-Key": lead.requestId },
+    signal: AbortSignal.timeout(10_000),
     body: JSON.stringify({
       from,
       to: [to],
@@ -97,10 +99,24 @@ export async function sendLeadNotification(lead: ValidatedLead): Promise<Deliver
 
   try {
     const response = await deliverWithResend(lead, apiKey);
-    return response.ok
-      ? { channel: "resend", configured: true, delivered: true, status: response.status }
-      : { channel: "resend", configured: true, delivered: false, status: response.status, error: "provider_rejected" };
-  } catch {
-    return { channel: "resend", configured: true, delivered: false, error: "request_failed" };
+    if (response.ok) {
+      return { channel: "resend", configured: true, delivered: true, status: response.status };
+    }
+    let providerDetail = `HTTP ${response.status}`;
+    try {
+      const body = await response.json() as { name?: string; message?: string };
+      providerDetail = [body.name, body.message].filter(Boolean).join(": ").slice(0, 300) || providerDetail;
+    } catch {
+      // Le statut HTTP reste disponible si le fournisseur ne renvoie pas de JSON.
+    }
+    return { channel: "resend", configured: true, delivered: false, status: response.status, error: "provider_rejected", detail: providerDetail };
+  } catch (error) {
+    return {
+      channel: "resend",
+      configured: true,
+      delivered: false,
+      error: "request_failed",
+      detail: error instanceof Error ? error.name : "UnknownError",
+    };
   }
 }
