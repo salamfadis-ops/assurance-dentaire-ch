@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { Container } from "@/components/layout/container";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
@@ -6,7 +7,7 @@ import { LeadForm } from "@/components/lead-form";
 import { MobileStickyCta } from "@/components/mobile-sticky-cta";
 import { JourneyTimeline, ProtectionVisual } from "@/components/premium/product-showcase";
 import { VydaMark } from "@/components/vyda-mark";
-import { insurers } from "@/lib/insurers";
+import { authorizedInsurers } from "@/lib/insurers";
 import { isDocumentStorageConfigured } from "@/lib/documents";
 import {
   ArrowRightIcon,
@@ -47,7 +48,7 @@ const baseFaqs = [
   },
   { question: "Une complémentaire ambulatoire peut-elle couvrir des soins dentaires ?", answer: "Selon le contrat, elle peut prévoir une participation aux soins dentaires ou à l’orthodontie. Le taux, le plafond, la franchise et les conditions doivent être vérifiés." },
   { question: "Comment l’orthodontie est-elle remboursée ?", answer: "La prise en charge varie selon l’âge d’admission, le délai d’attente, le taux de remboursement et le plafond total ou annuel prévu par le contrat." },
-  { question: "Les soins dans un pays frontalier sont-ils admis ?", answer: "Certaines compagnies les acceptent sous conditions. Il faut confirmer le pays, le tarif reconnu, les justificatifs et l’accord préalable éventuel." },
+  { question: "Pourquoi transmettre un devis dentaire ?", answer: "Le devis permet de préciser les actes, les montants et l’horizon du traitement afin de cibler les clauses contractuelles à vérifier." },
   { question: "Pourquoi assurer un jeune enfant tôt ?", answer: "Selon les conditions de la compagnie, une admission précoce peut simplifier le questionnaire ou éviter un contrôle dentaire préalable." },
   { question: "La souscription prénatale est-elle possible ?", answer: "Certaines compagnies proposent une admission avant la naissance avec des conditions spécifiques. Les modalités doivent être contrôlées avant la date limite." },
   { question: "Que signifient quote-part et plafond ?", answer: "La quote-part reste à votre charge après remboursement. Le plafond limite le montant versé par l’assureur sur une période ou pour un traitement." },
@@ -56,7 +57,7 @@ const baseFaqs = [
 const littleKnownFacts = [
   ["Votre complémentaire ambulatoire couvre peut-être déjà certains soins", "Selon le contrat, certains soins dentaires ou frais d’orthodontie peuvent déjà être pris en charge par une assurance complémentaire ambulatoire."],
   ["Il reste généralement une part à votre charge", "Le remboursement dépend du taux de prise en charge, du plafond, de la franchise et des conditions de la compagnie."],
-  ["Les soins à l’étranger sont parfois admis", "Certaines compagnies autorisent les traitements dans des pays frontaliers. Des coûts plus faibles peuvent alors réduire le reste à charge, notamment pour l’orthodontie."],
+  ["Un devis détaillé rend l’analyse plus concrète", "Les actes, les montants et les dates permettent de cibler les plafonds, exclusions et délais à vérifier dans votre contrat."],
   ["Assurer un enfant tôt peut simplifier l’admission", "Selon les compagnies, une souscription avant un certain âge peut nécessiter un questionnaire simplifié et éviter un contrôle dentaire préalable."],
   ["La souscription prénatale peut offrir des avantages", "Certaines compagnies proposent, selon leurs conditions en vigueur, des mois de primes offerts ou des conditions préférentielles."],
 ] as const;
@@ -160,13 +161,31 @@ export default function Home() {
           </Container>
         </section>
 
-        <section className="border-y border-[#dfe7e3] bg-[#f4f6f2] py-14 sm:py-20">
+        <section className="border-y border-[#dfe7e3] bg-[#f7f9f6] py-14 sm:py-20">
           <Container>
-            <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-end"><div><p className="eyebrow">Accès au marché</p><h2 className="mt-4 font-display text-4xl font-semibold tracking-[-0.05em] text-[#102d28] sm:text-5xl">Accès à plusieurs assureurs, une seule analyse</h2></div><p className="section-intro">VYDA compare les solutions disponibles selon votre situation et vos besoins.</p></div>
-            <ul className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8" aria-label="Assureurs accessibles">
-              {insurers.map((insurer) => <li key={insurer.name} className="flex min-h-20 items-center justify-center rounded-2xl border border-[#dce5e0] bg-white px-3 text-center text-sm font-extrabold text-[#29443d] shadow-[0_8px_25px_rgba(8,35,30,.035)]" aria-label={insurer.logoAlt}>{insurer.name}</li>)}
-            </ul>
-            <p className="mt-5 text-xs text-[#526a64]">Accès direct ou via notre distributeur selon la compagnie.</p>
+            <div className="mx-auto max-w-4xl text-center">
+              <p className="eyebrow">Analyse indépendante</p>
+              <h2 className="mt-4 font-display text-4xl font-semibold tracking-[-0.05em] text-[#102d28] sm:text-5xl">Nous analysons les solutions des principaux assureurs suisses</h2>
+              <p className="section-intro mx-auto mt-5">Une analyse indépendante des garanties, plafonds, délais d’attente et conditions d’admission selon votre situation.</p>
+            </div>
+            {authorizedInsurers.length > 0 ? (
+              <ul className="mt-10 grid grid-cols-2 gap-4 lg:grid-cols-4" aria-label="Logos des assureurs analysés">
+                {authorizedInsurers.map((insurer) => (
+                  <li key={insurer.name} className="group flex h-28 items-center justify-center rounded-2xl border border-[#dce5e0] bg-white p-6 shadow-[0_8px_25px_rgba(8,35,30,.035)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_35px_rgba(8,35,30,.08)]">
+                    <Image src={insurer.logoSrc} alt={insurer.logoAlt} width={220} height={80} className="h-14 w-full object-contain" />
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="mx-auto mt-10 max-w-2xl rounded-3xl border border-[#dce5e0] bg-white p-6 text-center shadow-[0_12px_35px_rgba(8,35,30,.04)]">
+                <ShieldIcon className="mx-auto h-6 w-6 text-[#176654]" />
+                <p className="mt-3 text-sm font-bold text-[#29443d]">Les marques seront affichées après validation écrite de leurs droits d’utilisation.</p>
+              </div>
+            )}
+            <div className="mx-auto mt-6 max-w-4xl space-y-2 text-center text-xs leading-5 text-[#526a64]">
+              <p>Les assureurs présentés le sont à titre informatif. L’accès aux solutions dépend de la situation du client, des conditions d’admission et des accords de distribution applicables à VYDA SA.</p>
+              <p>Certaines solutions peuvent être distribuées par l’intermédiaire d’un partenaire de distribution.</p>
+            </div>
           </Container>
         </section>
 

@@ -106,7 +106,19 @@ export function ResultScreen({ data, documents, uploadSessionId, result, onResta
   async function downloadReport() {
     setDownloading(true);
     try {
-      const response = await fetch("/api/report", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ data, result, documents }) });
+      const response = await fetch("/api/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data,
+          documents,
+          identity: {
+            firstName: contact.firstName,
+            lastName: contact.lastName,
+            reference: uploadSessionId,
+          },
+        }),
+      });
       if (!response.ok) throw new Error("report_failed");
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);

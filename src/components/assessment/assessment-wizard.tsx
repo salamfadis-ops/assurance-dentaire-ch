@@ -11,13 +11,14 @@ import {
   formatCurrency,
   initialAssessment,
   needCatalog,
+  objectiveLabels,
   profileLabels,
   type AssessmentData,
   type NeedKey,
 } from "@/lib/dental-assessment";
 import { DEFAULT_DOCUMENT_MAX_FILES, emptyAssessmentDocuments, type AssessmentDocuments } from "@/lib/documents";
 
-const STORAGE_KEY = "vyda-dental-assessment-v1";
+const STORAGE_KEY = "vyda-dental-assessment-v2";
 const cantons = ["AG", "AI", "AR", "BE", "BL", "BS", "FR", "GE", "GL", "GR", "JU", "LU", "NE", "NW", "OW", "SG", "SH", "SO", "SZ", "TG", "TI", "UR", "VD", "VS", "ZG", "ZH"];
 const stepNames = ["Profil", "Situation", "Garanties", "Besoins", "Calculateur", "Préparation", "Documents", "Résultat"];
 const ResultScreen = dynamic(() => import("@/components/assessment/result-screen").then((module) => module.ResultScreen), {
@@ -106,9 +107,9 @@ export function AssessmentWizard({ storageConfigured }: { storageConfigured: boo
     if (currentStep === 1) return Boolean(data.profile && (data.profile !== "child" || data.childAge) && (data.profile !== "unborn" || data.expectedBirthDate));
     if (currentStep === 2) return Boolean(data.canton && data.ambulatoryCoverage);
     if (currentStep === 3) return Boolean(data.coverage && data.verifyGuarantees !== null && (data.ambulatoryCoverage !== "yes" || data.dentalParticipation));
-    if (currentStep === 4) return data.needs.length > 0;
-    if (currentStep === 5) return (data.customBudget || planningNeed) > 0;
-    if (currentStep === 6) return Boolean(data.prevention && data.reserve && data.timeline && data.crossBorderCare);
+    if (currentStep === 4) return Boolean(data.objective && data.needs.length > 0);
+    if (currentStep === 5) return Boolean(data.hasQuote !== null && (data.customBudget || planningNeed) > 0);
+    if (currentStep === 6) return Boolean(data.prevention && data.reserve && data.timeline);
     return true;
   }
 
@@ -263,7 +264,13 @@ export function AssessmentWizard({ storageConfigured }: { storageConfigured: boo
                   {step === 4 && (
                     <div>
                       <p className="assessment-kicker">Vos priorités</p>
-                      <h1 className="assessment-title">Quels besoins souhaitez-vous anticiper ?</h1>
+                      <h1 className="assessment-title">Quel est votre objectif principal ?</h1>
+                      <div className="mt-7 grid gap-3 sm:grid-cols-2">
+                        {(Object.keys(objectiveLabels) as Array<Exclude<AssessmentData["objective"], "">>).map((objective) => (
+                          <OptionButton key={objective} active={data.objective === objective} onClick={() => update("objective", objective)}>{objectiveLabels[objective]}</OptionButton>
+                        ))}
+                      </div>
+                      <h2 className="mt-9 text-xl font-bold text-[#102d28]">Quels besoins souhaitez-vous anticiper ?</h2>
                       <p className="assessment-intro">Sélectionnez toutes vos priorités.</p>
                       <div className="mt-7 grid gap-3 sm:grid-cols-2">
                         {(Object.keys(needCatalog) as NeedKey[]).map((need) => <OptionButton key={need} active={data.needs.includes(need)} onClick={() => toggleNeed(need)} description={needCatalog[need].description}>{needCatalog[need].label}</OptionButton>)}
@@ -277,6 +284,20 @@ export function AssessmentWizard({ storageConfigured }: { storageConfigured: boo
                       <p className="assessment-kicker">Calculateur de besoins</p>
                       <h1 className="assessment-title">Quel montant souhaitez-vous pouvoir absorber ?</h1>
                       <p className="assessment-intro">Ajustez cette base de planification selon votre situation.</p>
+                      <div className="mt-7">
+                        <p className="assessment-label">Avez-vous déjà reçu un devis pour des soins dentaires ou de l’orthodontie ?</p>
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                          {([true, false] as const).map((value) => <OptionButton key={String(value)} active={data.hasQuote === value} onClick={() => update("hasQuote", value)}>{value ? "Oui" : "Non"}</OptionButton>)}
+                        </div>
+                      </div>
+                      {data.hasQuote && (
+                        <label className="assessment-label mt-6">Quel est le montant approximatif du devis ? <span className="font-normal text-slate-500">(facultatif)</span>
+                          <span className="mt-2 flex items-center overflow-hidden rounded-xl border border-slate-300 bg-white focus-within:border-[#176654] focus-within:ring-3 focus-within:ring-[#176654]/10">
+                            <span className="border-r border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold">CHF</span>
+                            <input type="number" min="0" max="1000000" step="50" inputMode="decimal" value={data.quoteAmount || ""} onChange={(event) => update("quoteAmount", Math.max(0, Number(event.target.value) || 0))} className="min-h-12 min-w-0 flex-1 px-4 text-base font-normal outline-none" placeholder="Ex. 8’500" />
+                          </span>
+                        </label>
+                      )}
                       <div className="mt-8 rounded-3xl bg-[#f3f7f4] p-6 sm:p-8">
                         <p className="text-sm font-semibold text-slate-500">Besoin de planification</p>
                         <p key={data.customBudget || planningNeed} className="assessment-value-pulse mt-2 font-display text-4xl font-semibold tracking-tight text-[#102d28] sm:text-5xl">{formatCurrency(data.customBudget || planningNeed)}</p>
@@ -295,7 +316,6 @@ export function AssessmentWizard({ storageConfigured }: { storageConfigured: boo
                         <label className="assessment-label">À quelle fréquence consultez-vous pour la prévention ?<select value={data.prevention} onChange={(event) => update("prevention", event.target.value as AssessmentData["prevention"])} className="form-control"><option value="">Choisir</option><option value="twice">Deux fois par an</option><option value="yearly">Une fois par an</option><option value="irregular">Irrégulièrement</option><option value="never">Jamais ou presque</option></select></label>
                         <label className="assessment-label">Votre réserve actuelle pourrait-elle absorber ce besoin ?<select value={data.reserve} onChange={(event) => update("reserve", event.target.value as AssessmentData["reserve"])} className="form-control"><option value="">Choisir</option><option value="comfortable">Oui, confortablement</option><option value="partial">En partie</option><option value="limited">Très difficilement</option><option value="none">Non</option></select></label>
                         <label className="assessment-label">Quand pensez-vous avoir besoin de soins ?<select value={data.timeline} onChange={(event) => update("timeline", event.target.value as AssessmentData["timeline"])} className="form-control"><option value="">Choisir</option><option value="preventive">Aucun soin prévu, démarche préventive</option><option value="year">Dans les 12 prochains mois</option><option value="soon">Dans les 3 prochains mois</option><option value="ongoing">Traitement conseillé ou déjà commencé</option></select></label>
-                        <div><p className="assessment-label">Êtes-vous ouvert à des soins dans un pays frontalier si votre contrat le permet ?</p><div className="mt-3 grid gap-3 sm:grid-cols-3">{(["yes", "no", "consider"] as const).map((value) => <OptionButton key={value} active={data.crossBorderCare === value} onClick={() => update("crossBorderCare", value)}>{value === "yes" ? "Oui" : value === "no" ? "Non" : "À étudier"}</OptionButton>)}</div></div>
                       </div>
                     </div>
                   )}

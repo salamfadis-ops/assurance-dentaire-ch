@@ -54,7 +54,9 @@ function sanitizeAssessment(value: unknown): AssessmentData {
     ambulatoryCoverage: oneOf(source.ambulatoryCoverage, ["yes", "no", "unknown"] as const, ""),
     dentalParticipation: oneOf(source.dentalParticipation, ["yes", "no", "unknown", "not_applicable"] as const, ""),
     verifyGuarantees: typeof source.verifyGuarantees === "boolean" ? source.verifyGuarantees : null,
-    crossBorderCare: oneOf(source.crossBorderCare, ["yes", "no", "consider"] as const, ""),
+    objective: oneOf(source.objective, ["current_coverage", "protect_child", "anticipate_treatment", "orthodontics", "compare", "unsure"] as const, ""),
+    hasQuote: typeof source.hasQuote === "boolean" ? source.hasQuote : null,
+    quoteAmount: Math.max(0, Math.min(1_000_000, Number(source.quoteAmount) || 0)),
     prevention: oneOf(source.prevention, ["twice", "yearly", "irregular", "never"] as const, ""),
     reserve: oneOf(source.reserve, ["comfortable", "partial", "limited", "none"] as const, ""),
     timeline: oneOf(source.timeline, ["preventive", "year", "soon", "ongoing"] as const, ""),
@@ -114,7 +116,7 @@ export function validateLeadPayload(input: unknown): { lead?: ValidatedLead; err
   if (email && !emailPattern.test(email)) errors.push("e-mail invalide");
   if (!preferences.has(preference)) errors.push("préférence de contact requise");
   if (journey === "bilan" && !validCantons.has(canton)) errors.push("canton invalide");
-  if (journey === "bilan" && (!answers?.profile || !answers.needs.length || !answers.ambulatoryCoverage)) errors.push("bilan incomplet");
+  if (journey === "bilan" && (!answers?.profile || !answers.needs.length || !answers.ambulatoryCoverage || !answers.objective || answers.hasQuote === null)) errors.push("bilan incomplet");
   if (consentSource.accepted !== true || !clean(consentSource.timestamp, 40)) errors.push("consentement requis");
 
   if (errors.length) return { errors, spam: false };

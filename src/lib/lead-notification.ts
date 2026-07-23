@@ -1,5 +1,5 @@
 import { issueSignedToken, presignUrl } from "@vercel/blob";
-import { calculateAssessment } from "@/lib/dental-assessment";
+import { calculateAssessment, objectiveLabels } from "@/lib/dental-assessment";
 import { createAdvisorReport, createProspectReport } from "@/lib/dental-report";
 import type { AssessmentDocuments } from "@/lib/documents";
 import { contactPreferenceLabels } from "@/lib/lead";
@@ -46,6 +46,9 @@ async function deliverWithResend(lead: ValidatedLead, apiKey: string) {
     ["Canton", lead.contact.canton || "Non renseigné"],
     ["Préférence", contactPreferenceLabels[lead.contact.preference]],
     ["Score", score === undefined ? "Non disponible" : `${score}/100`],
+    ["Objectif", lead.answers?.objective ? objectiveLabels[lead.answers.objective] : "Non renseigné"],
+    ["Devis reçu", lead.answers?.hasQuote ? "Oui" : "Non"],
+    ["Montant du devis", lead.answers?.quoteAmount ? `${lead.answers.quoteAmount.toLocaleString("fr-CH")} CHF` : "Non renseigné"],
     ["Calendly", lead.calendlyStatus],
     ["Source", lead.attribution.source || "Direct"],
     ["Campagne", lead.attribution.campaign || "Non renseignée"],
@@ -61,7 +64,13 @@ async function deliverWithResend(lead: ValidatedLead, apiKey: string) {
   if (lead.answers && lead.score) {
     const documents: AssessmentDocuments = { contracts: lead.documents.filter((item) => item.category === "contract"), quotes: lead.documents.filter((item) => item.category === "quote") };
     const result = calculateAssessment(lead.answers, documents);
-    attachments.push({ filename: "bilan-prospect.pdf", content: Buffer.from(createProspectReport(lead.answers, result, documents)).toString("base64") });
+    const prospectReport = await createProspectReport(lead.answers, result, documents, {
+      firstName: lead.contact.firstName,
+      lastName: lead.contact.lastName,
+      reference: lead.requestId,
+      generatedAt: lead.createdAt,
+    });
+    attachments.push({ filename: "bilan-prospect.pdf", content: Buffer.from(prospectReport).toString("base64") });
   }
   attachments.push({ filename: "synthese-conseiller-vyda.pdf", content: Buffer.from(createAdvisorReport(lead)).toString("base64") });
 

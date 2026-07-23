@@ -18,7 +18,7 @@ export type ReserveKey = "comfortable" | "partial" | "limited" | "none" | "";
 export type TimelineKey = "preventive" | "year" | "soon" | "ongoing" | "";
 export type AmbulatoryCoverageKey = "yes" | "no" | "unknown" | "";
 export type DentalParticipationKey = "yes" | "no" | "unknown" | "not_applicable" | "";
-export type CrossBorderKey = "yes" | "no" | "consider" | "";
+export type ObjectiveKey = "current_coverage" | "protect_child" | "anticipate_treatment" | "orthodontics" | "compare" | "unsure" | "";
 
 export type AssessmentData = {
   profile: ProfileKey;
@@ -32,7 +32,9 @@ export type AssessmentData = {
   ambulatoryCoverage: AmbulatoryCoverageKey;
   dentalParticipation: DentalParticipationKey;
   verifyGuarantees: boolean | null;
-  crossBorderCare: CrossBorderKey;
+  objective: ObjectiveKey;
+  hasQuote: boolean | null;
+  quoteAmount: number;
   prevention: PreventionKey;
   reserve: ReserveKey;
   timeline: TimelineKey;
@@ -68,7 +70,9 @@ export const initialAssessment: AssessmentData = {
   ambulatoryCoverage: "",
   dentalParticipation: "",
   verifyGuarantees: null,
-  crossBorderCare: "",
+  objective: "",
+  hasQuote: null,
+  quoteAmount: 0,
   prevention: "",
   reserve: "",
   timeline: "",
@@ -80,9 +84,18 @@ export const profileLabels: Record<Exclude<ProfileKey, "">, string> = {
   unborn: "Un enfant à naître",
 };
 
+export const objectiveLabels: Record<Exclude<ObjectiveKey, "">, string> = {
+  current_coverage: "Vérifier ma couverture actuelle",
+  protect_child: "Assurer mon enfant",
+  anticipate_treatment: "Anticiper un traitement dentaire",
+  orthodontics: "Préparer des frais d’orthodontie",
+  compare: "Comparer avant de souscrire",
+  unsure: "Je ne sais pas encore",
+};
+
 export function calculatePlanningNeed(data: AssessmentData) {
   const catalogTotal = data.needs.reduce((total, need) => total + needCatalog[need].planningAmount, 0);
-  return data.customBudget || Math.round(catalogTotal / 50) * 50;
+  return data.customBudget || data.quoteAmount || Math.round(catalogTotal / 50) * 50;
 }
 
 export function calculateAssessment(data: AssessmentData, documents: AssessmentDocuments): AssessmentResult {
@@ -106,8 +119,10 @@ export function calculateAssessment(data: AssessmentData, documents: AssessmentD
   if (data.timeline === "soon" || data.timeline === "ongoing") recommendations.push("Contrôler immédiatement les exclusions : un traitement conseillé ou commencé peut ne pas être couvert.");
   if (data.needs.includes("orthodontics") && (data.profile === "child" || data.profile === "unborn")) recommendations.push("Pour l’orthodontie, comparer l’âge limite d’entrée, le délai d’attente et le plafond total par enfant.");
   if (data.profile === "unborn") recommendations.push("Comparer les conditions de souscription prénatale avant la naissance et les délais d’activation.");
-  if (data.crossBorderCare !== "no") recommendations.push("Vérifier par écrit si les soins réalisés dans un pays frontalier sont admis et selon quel tarif.");
   if (data.needs.includes("implants") || data.needs.includes("prosthetics")) recommendations.push("Pour les traitements importants, comparer le taux remboursé et le plafond annuel, pas seulement la prime.");
+  if (data.hasQuote) recommendations.push("Faire contrôler le devis, la nature des actes et la part potentiellement reconnue avant toute décision.");
+  if (data.objective === "current_coverage") recommendations.push("Comparer les garanties déclarées avec la police et le tableau de prestations en vigueur.");
+  if (data.objective === "compare") recommendations.push("Comparer les conditions d’admission et les limites contractuelles avant de choisir une prime.");
   if (!documents.contracts.length && data.verifyGuarantees) recommendations.push("Transmettre votre police et son tableau de prestations pour permettre une vérification détaillée.");
   if (recommendations.length < 3) recommendations.push("Conserver une réserve dédiée aux soins non couverts ou dépassant le plafond annuel.");
 
@@ -131,7 +146,7 @@ export function deriveAssessmentRisks(data: AssessmentData, documents: Assessmen
   if (data.timeline === "soon" || data.timeline === "ongoing") risks.push("Soins proches ou déjà engagés potentiellement exclus");
   if (data.reserve === "limited" || data.reserve === "none") risks.push("Capacité financière limitée face à un reste à charge");
   if (data.needs.includes("orthodontics")) risks.push("Plafonds et âge d’admission à contrôler pour l’orthodontie");
-  if (data.crossBorderCare !== "no") risks.push("Prise en charge transfrontalière à confirmer par écrit");
+  if (data.hasQuote && !documents.quotes.length) risks.push("Devis déclaré mais non transmis");
   if (data.verifyGuarantees && !documents.contracts.length) risks.push("Police demandée mais non transmise");
   return risks;
 }
