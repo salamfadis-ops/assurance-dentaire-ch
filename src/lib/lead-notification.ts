@@ -5,6 +5,14 @@ import type { AssessmentDocuments } from "@/lib/documents";
 import { contactPreferenceLabels } from "@/lib/lead";
 import type { ValidatedLead } from "@/lib/lead-validation";
 
+export type DeliveryAttempt = {
+  channel: "resend" | "webhook";
+  configured: boolean;
+  delivered: boolean;
+  status?: number;
+  error?: "not_configured" | "request_failed" | "provider_rejected";
+};
+
 function escapeHtml(value: string) {
   return value.replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character] ?? character);
 }
@@ -26,9 +34,7 @@ async function secureDocumentLinks(lead: ValidatedLead) {
   return links;
 }
 
-export async function sendLeadNotification(lead: ValidatedLead) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return false;
+async function deliverWithResend(lead: ValidatedLead, apiKey: string) {
   const to = process.env.LEADS_TO_EMAIL || "contact@vyda.ch";
   const from = process.env.LEADS_FROM_EMAIL || "Assurance Dentaire <leads@assurance-dentaire.ch>";
   const score = lead.score?.global;
@@ -71,5 +77,21 @@ export async function sendLeadNotification(lead: ValidatedLead) {
       attachments,
     }),
   });
-  return response.ok;
+  return response;
+}
+
+export async function sendLeadNotification(lead: ValidatedLead): Promise<DeliveryAttempt> {
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  if (!apiKey) {
+    return { channel: "resend", configured: false, delivered: false, error: "not_configured" };
+  }
+
+  try {
+    const response = await deliverWithResend(lead, apiKey);
+    return response.ok
+      ? { channel: "resend", configured: true, delivered: true, status: response.status }
+      : { channel: "resend", configured: true, delivered: false, status: response.status, error: "provider_rejected" };
+  } catch {
+    return { channel: "resend", configured: true, delivered: false, error: "request_failed" };
+  }
 }

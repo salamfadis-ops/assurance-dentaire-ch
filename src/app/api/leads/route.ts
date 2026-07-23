@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { sendLeadNotification } from "@/lib/lead-notification";
+import { sendLeadNotification, type DeliveryAttempt } from "@/lib/lead-notification";
 import { validateLeadPayload, type ValidatedLead } from "@/lib/lead-validation";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
 
@@ -8,11 +8,18 @@ export const runtime = "nodejs";
 const processedRequests = new Map<string, number>();
 const inFlightRequests = new Set<string>();
 
-async function sendToWebhook(lead: ValidatedLead) {
-  const url = process.env.LEADS_WEBHOOK_URL;
-  if (!url) return false;
-  const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": lead.requestId }, body: JSON.stringify(lead), signal: AbortSignal.timeout(8000) });
-  return response.ok;
+async function sendToWebhook(lead: ValidatedLead): Promise<DeliveryAttempt> {
+  const url = process.env.LEADS_WEBHOOK_URL?.trim();
+  if (!url) return { channel: "webhook", configured: false, delivered: false, error: "not_configured" };
+
+  try {
+    const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": lead.requestId }, body: JSON.stringify(lead), signal: AbortSignal.timeout(8000) });
+    return response.ok
+      ? { channel: "webhook", configured: true, delivered: true, status: response.status }
+      : { channel: "webhook", configured: true, delivered: false, status: response.status, error: "provider_rejected" };
+  } catch {
+    return { channel: "webhook", configured: true, delivered: false, error: "request_failed" };
+  }
 }
 
 function requestAlreadyHandled(requestId: string) {
@@ -42,23 +49,49 @@ export async function POST(request: Request) {
   inFlightRequests.add(validation.lead.requestId);
 
   try {
-    const [emailDelivered, webhookDelivered] = await Promise.all([
+    const attempts = await Promise.all([
       sendLeadNotification(validation.lead),
       sendToWebhook(validation.lead),
     ]);
-    if (!emailDelivered && !webhookDelivered) {
+    if (!attempts.some((attempt) => attempt.delivered)) {
       if (process.env.NODE_ENV === "development") {
         processedRequests.set(validation.lead.requestId, Date.now() + 24 * 60 * 60 * 1000);
-        return NextResponse.json({ ok: true, mode: "development" });
+        return NextResponse.json({ ok: true, mode: "development", delivery: attempts });
       }
-      return NextResponse.json({ error: "Service temporairement indisponible" }, { status: 503 });
+
+      const configured = attempts.some((attempt) => attempt.configured);
+      // Les diagnostics ne contiennent aucune coordonnée ni réponse du prospect.
+      console.error("[lead_delivery_unavailable]", {
+        requestId: validation.lead.requestId,
+        journey: validation.lead.journey,
+        channels: attempts.map(({ channel, configured: isConfigured, status, error }) => ({ channel, configured: isConfigured, status, error })),
+      });
+
+      if (!configured) {
+        return NextResponse.json(
+          {
+            ok: false,
+            code: "LEAD_DELIVERY_NOT_CONFIGURED",
+            error: "La livraison des demandes n’est pas configurée.",
+          },
+          { status: 424 },
+        );
+      }
+
+      return NextResponse.json(
+        {
+          ok: false,
+          code: "LEAD_DELIVERY_FAILED",
+          error: "La demande n’a pas pu être livrée au conseiller.",
+        },
+        { status: 502 },
+      );
     }
     processedRequests.set(validation.lead.requestId, Date.now() + 24 * 60 * 60 * 1000);
-    return NextResponse.json({ ok: true });
-  } catch {
-    // Les logs applicatifs n’incluent aucune coordonnée, réponse ou donnée médicale.
-    console.error("[lead_delivery_failed]", { requestId: validation.lead.requestId, journey: validation.lead.journey });
-    return NextResponse.json({ error: "Service temporairement indisponible" }, { status: 503 });
+    return NextResponse.json({
+      ok: true,
+      deliveredBy: attempts.filter((attempt) => attempt.delivered).map((attempt) => attempt.channel),
+    });
   } finally {
     inFlightRequests.delete(validation.lead.requestId);
   }

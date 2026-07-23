@@ -49,10 +49,10 @@ Copier `.env.example` vers `.env.local`. Ne jamais exposer les variables serveur
 
 | Variable | Rôle |
 | --- | --- |
-| `RESEND_API_KEY` | Envoi de la notification VYDA |
-| `LEADS_TO_EMAIL` | Destinataire, recommandé : `contact@vyda.ch` |
-| `LEADS_FROM_EMAIL` | Expéditeur vérifié dans Resend |
-| `LEADS_WEBHOOK_URL` | Livraison CRM facultative |
+| `RESEND_API_KEY` | Clé serveur Resend. Requise si Resend est le canal de livraison |
+| `LEADS_TO_EMAIL` | Destinataire, valeur par défaut : `contact@vyda.ch` |
+| `LEADS_FROM_EMAIL` | Expéditeur appartenant à un domaine vérifié dans Resend |
+| `LEADS_WEBHOOK_URL` | Alternative à Resend : endpoint HTTPS du CRM |
 | `BLOB_READ_WRITE_TOKEN` | Accès au store Blob privé |
 | `BLOB_STORE_ID` | Identifiant du store pour l’authentification OIDC |
 | `DOCUMENT_MAX_SIZE_MB` | Limite par PDF, `10` par défaut |
@@ -73,7 +73,16 @@ Copier `.env.example` vers `.env.local`. Ne jamais exposer les variables serveur
 6. Ajouter `NEXT_PUBLIC_CALENDLY_URL` uniquement si le calendrier VYDA est prêt.
 7. Déployer, puis tester un lead de rappel, un bilan et un PDF de moins de 10 Mo.
 
-Sans Resend ni webhook, l’API accepte les tests en développement mais renvoie une erreur explicite en production afin de ne jamais perdre silencieusement un lead.
+Une méthode de livraison au minimum doit être configurée :
+
+- Resend : `RESEND_API_KEY` et un `LEADS_FROM_EMAIL` autorisé par Resend ;
+- ou webhook : `LEADS_WEBHOOK_URL`.
+
+Sans canal configuré, `/api/leads` répond avec le code explicite
+`LEAD_DELIVERY_NOT_CONFIGURED` et le statut HTTP `424`. Si un canal est configuré
+mais refuse la requête ou ne répond pas, la route renvoie
+`LEAD_DELIVERY_FAILED` avec le statut HTTP `502`. La route ne transforme plus
+tous les défauts de configuration et de fournisseur en erreur générique `503`.
 
 ## Rapports
 
