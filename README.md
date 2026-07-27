@@ -50,8 +50,8 @@ Copier `.env.example` vers `.env.local`. Ne jamais exposer les variables serveur
 | Variable | Rôle |
 | --- | --- |
 | `RESEND_API_KEY` | Clé serveur Resend. Requise si Resend est le canal de livraison |
-| `LEADS_TO_EMAIL` | Destinataire, valeur par défaut : `contact@vyda.ch` |
-| `LEADS_FROM_EMAIL` | Expéditeur appartenant à un domaine vérifié dans Resend |
+| `RESEND_FROM_EMAIL` | Expéditeur appartenant à un domaine vérifié dans Resend |
+| `LEAD_NOTIFICATION_EMAIL` | Destinataire des notifications de nouveaux leads |
 | `LEADS_WEBHOOK_URL` | Alternative à Resend : endpoint HTTPS du CRM |
 | `BLOB_READ_WRITE_TOKEN` | Accès au store Blob privé |
 | `VERCEL_OIDC_TOKEN` | Jeton OIDC fourni automatiquement par Vercel quand ce mode est activé |
@@ -70,14 +70,14 @@ Copier `.env.example` vers `.env.local`. Ne jamais exposer les variables serveur
 2. Définir les variables d’environnement pour Production et Preview.
    Au moins `RESEND_API_KEY` ou `LEADS_WEBHOOK_URL` doit être présent. Le store Blob est fortement recommandé comme sauvegarde de secours.
 3. Dans **Storage**, créer un store Blob avec l’accès **Private** et le connecter au projet.
-4. Vérifier le domaine expéditeur dans Resend et renseigner `RESEND_API_KEY` et `LEADS_FROM_EMAIL`.
+4. Vérifier le domaine expéditeur dans Resend et renseigner `RESEND_API_KEY`, `RESEND_FROM_EMAIL` et `LEAD_NOTIFICATION_EMAIL`.
 5. Définir un `CRON_SECRET` aléatoire. Le cron de purge est déclaré dans `vercel.json`.
 6. Ajouter `NEXT_PUBLIC_CALENDLY_URL` uniquement si le calendrier VYDA est prêt.
 7. Déployer, puis tester un lead de rappel, un bilan et un PDF de moins de 10 Mo.
 
 Une méthode de livraison au minimum doit être configurée :
 
-- Resend : `RESEND_API_KEY` et un `LEADS_FROM_EMAIL` autorisé par Resend ;
+- Resend : `RESEND_API_KEY`, un `RESEND_FROM_EMAIL` autorisé par Resend et `LEAD_NOTIFICATION_EMAIL` ;
 - ou webhook : `LEADS_WEBHOOK_URL`.
 
 Sans canal configuré, `/api/leads` répond avec le code explicite

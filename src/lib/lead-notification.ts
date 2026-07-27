@@ -36,8 +36,8 @@ async function secureDocumentLinks(lead: ValidatedLead) {
 }
 
 async function deliverWithResend(lead: ValidatedLead, apiKey: string) {
-  const to = process.env.LEADS_TO_EMAIL || "contact@vyda.ch";
-  const from = process.env.LEADS_FROM_EMAIL || "Assurance Dentaire <leads@assurance-dentaire.ch>";
+  const to = process.env.LEAD_NOTIFICATION_EMAIL?.trim() || "contact@vyda.ch";
+  const from = process.env.RESEND_FROM_EMAIL?.trim() || "Assurance Dentaire <leads@assurance-dentaire.ch>";
   const score = lead.score?.global;
   const links = await secureDocumentLinks(lead);
   const rows = [
