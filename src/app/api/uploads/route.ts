@@ -167,8 +167,9 @@ export async function GET() {
   return NextResponse.json({
     configured: storage.configured,
     authMode: storage.mode,
+    credentialSignals: storage.signals,
     missing: storage.missing,
-    required: ["BLOB_READ_WRITE_TOKEN", "VERCEL_OIDC_TOKEN + BLOB_STORE_ID"],
+    required: ["BLOB_READ_WRITE_TOKEN", "BLOB_STORE_ID + identité OIDC Vercel"],
     maxFiles: DEFAULT_DOCUMENT_MAX_FILES,
     maxSizeBytes: getDocumentMaxSizeBytes(),
     acceptedTypes: ["application/pdf"],
@@ -248,13 +249,14 @@ export async function POST(request: Request) {
       requestId,
       providerCode: "credentials_missing",
       missing: storage.missing,
+      credentialSignals: storage.signals,
     });
     return NextResponse.json({
       ok: false,
       code: "BLOB_STORAGE_NOT_CONFIGURED",
       providerCode: "credentials_missing",
       error: "Le stockage Vercel Blob n’est pas configuré.",
-      required: ["BLOB_READ_WRITE_TOKEN", "VERCEL_OIDC_TOKEN + BLOB_STORE_ID"],
+      required: ["BLOB_READ_WRITE_TOKEN", "BLOB_STORE_ID + identité OIDC Vercel"],
       missing: storage.missing,
     }, { status: 503 });
   }
@@ -266,6 +268,7 @@ export async function POST(request: Request) {
     category: upload.category,
     size: upload.size,
     contentType: upload.contentType,
+    credentialSignals: storage.signals,
   });
 
   try {

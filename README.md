@@ -54,8 +54,8 @@ Copier `.env.example` vers `.env.local`. Ne jamais exposer les variables serveur
 | `LEAD_NOTIFICATION_EMAIL` | Destinataire obligatoire des notifications de nouveaux leads |
 | `LEADS_WEBHOOK_URL` | Alternative à Resend : endpoint HTTPS du CRM |
 | `BLOB_READ_WRITE_TOKEN` | Accès au store Blob privé avec un token read-write |
-| `VERCEL_OIDC_TOKEN` | Alternative au token read-write, injectée automatiquement par Vercel quand OIDC est activé |
-| `BLOB_STORE_ID` | Identifiant du store, obligatoire avec `VERCEL_OIDC_TOKEN` |
+| `VERCEL_OIDC_TOKEN` | Identité OIDC éventuelle ; en Function Vercel, elle peut provenir du contexte de requête sans être visible dans `process.env` |
+| `BLOB_STORE_ID` | Identifiant du store lié, utilisé avec l’identité OIDC Vercel |
 | `DOCUMENT_MAX_SIZE_MB` | Limite par PDF, `10` par défaut |
 | `LEAD_DOCUMENT_RETENTION_DAYS` | Conservation, `30` jours par défaut |
 | `DOCUMENT_LINK_TTL_HOURS` | Expiration des liens privés, `72` h par défaut |
@@ -78,10 +78,11 @@ Copier `.env.example` vers `.env.local`. Ne jamais exposer les variables serveur
 L’upload accepte exactement l’une de ces configurations :
 
 - `BLOB_READ_WRITE_TOKEN` ;
-- ou `VERCEL_OIDC_TOKEN` avec `BLOB_STORE_ID`.
+- ou `BLOB_STORE_ID` avec l’identité OIDC fournie par le contexte de requête Vercel (ou explicitement par `VERCEL_OIDC_TOKEN`).
 
-La route `/api/uploads` expose uniquement le mode disponible et les noms des
-variables absentes. Elle ne renvoie et ne journalise jamais leur valeur.
+La route `/api/uploads` expose uniquement le mode disponible et des indicateurs
+booléens de configuration. Le frontend reste actif et laisse la route vérifier
+les droits lors de la tentative. Aucune valeur de jeton n’est renvoyée ou journalisée.
 
 Une méthode de livraison au minimum doit être configurée :
 

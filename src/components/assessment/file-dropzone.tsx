@@ -11,7 +11,6 @@ type FileDropzoneProps = {
   category: DocumentCategory;
   documents: StoredDocument[];
   uploadSessionId: string;
-  storageConfigured: boolean;
   remainingSlots: number;
   onChange: (documents: StoredDocument[]) => void;
 };
@@ -131,7 +130,7 @@ async function uploadPdf(file: File, uploadSessionId: string, category: Document
   return { pathname: uploadedPathname, url: uploadedUrl };
 }
 
-export function FileDropzone({ id, label, description, category, documents, uploadSessionId, storageConfigured, remainingSlots, onChange }: FileDropzoneProps) {
+export function FileDropzone({ id, label, description, category, documents, uploadSessionId, remainingSlots, onChange }: FileDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -147,12 +146,6 @@ export function FileDropzone({ id, label, description, category, documents, uplo
       event.target.value = "";
       return;
     }
-    if (!storageConfigured) {
-      setError("L’envoi sécurisé des documents sera disponible après configuration du stockage.");
-      event.target.value = "";
-      return;
-    }
-
     setUploading(true);
     const uploaded: StoredDocument[] = [];
     try {
@@ -195,7 +188,7 @@ export function FileDropzone({ id, label, description, category, documents, uplo
         </div>
       ))}
 
-      <label htmlFor={id} aria-disabled={!storageConfigured || uploading || remainingSlots <= 0} className={`group block rounded-2xl border border-dashed p-5 transition ${storageConfigured && !uploading && remainingSlots > 0 ? "cursor-pointer border-slate-300 bg-white hover:border-[#176654] hover:bg-emerald-50/40" : "cursor-not-allowed border-slate-200 bg-slate-50 opacity-70"}`}>
+      <label htmlFor={id} aria-disabled={uploading || remainingSlots <= 0} className={`group block rounded-2xl border border-dashed p-5 transition ${!uploading && remainingSlots > 0 ? "cursor-pointer border-slate-300 bg-white hover:border-[#176654] hover:bg-emerald-50/40" : "cursor-not-allowed border-slate-200 bg-slate-50 opacity-70"}`}>
         <span className="flex items-start gap-4">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#edf6f2] text-[#176654]">
             <LockIcon className="h-5 w-5" />
@@ -207,8 +200,7 @@ export function FileDropzone({ id, label, description, category, documents, uplo
           </span>
         </span>
       </label>
-      <input ref={inputRef} id={id} type="file" accept="application/pdf" multiple disabled={!storageConfigured || uploading || remainingSlots <= 0} onChange={selectFiles} className="sr-only" />
-      {!storageConfigured && <p className="rounded-xl bg-[#fff4ef] p-3 text-xs font-semibold leading-5 text-[#783c22]">L’envoi sécurisé des documents sera disponible après configuration du stockage.</p>}
+      <input ref={inputRef} id={id} type="file" accept="application/pdf" multiple disabled={uploading || remainingSlots <= 0} onChange={selectFiles} className="sr-only" />
       {error && <p className="text-xs font-semibold text-red-700" role="alert">{error}</p>}
     </div>
   );

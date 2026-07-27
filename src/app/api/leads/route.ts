@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isDocumentStorageConfigured } from "@/lib/document-storage";
 import { sendLeadNotification, type DeliveryAttempt } from "@/lib/lead-notification";
 import { persistLead } from "@/lib/lead-persistence";
 import { validateLeadPayload, type ValidatedLead } from "@/lib/lead-validation";
@@ -40,7 +41,7 @@ function deliveryConfiguration() {
   const leadNotificationEmail = Boolean(process.env.LEAD_NOTIFICATION_EMAIL?.trim());
   const resend = resendApiKey && resendFromEmail && leadNotificationEmail;
   const webhook = Boolean(process.env.LEADS_WEBHOOK_URL?.trim());
-  const blob = Boolean(process.env.BLOB_READ_WRITE_TOKEN || (process.env.VERCEL_OIDC_TOKEN && process.env.BLOB_STORE_ID));
+  const blob = isDocumentStorageConfigured();
   return {
     resend,
     webhook,
@@ -50,7 +51,7 @@ function deliveryConfiguration() {
       ...(!resendFromEmail ? ["RESEND_FROM_EMAIL"] : []),
       ...(!leadNotificationEmail ? ["LEAD_NOTIFICATION_EMAIL"] : []),
       ...(!webhook ? ["LEADS_WEBHOOK_URL"] : []),
-      ...(!blob ? ["BLOB_READ_WRITE_TOKEN or VERCEL_OIDC_TOKEN + BLOB_STORE_ID"] : []),
+      ...(!blob ? ["BLOB_READ_WRITE_TOKEN or BLOB_STORE_ID + Vercel OIDC identity"] : []),
     ],
   };
 }
@@ -138,7 +139,7 @@ export async function POST(request: Request) {
             error: "Aucun canal de livraison ni stockage de secours n’est configuré.",
             required: [
               "RESEND_API_KEY + RESEND_FROM_EMAIL + LEAD_NOTIFICATION_EMAIL, ou LEADS_WEBHOOK_URL",
-              "BLOB_READ_WRITE_TOKEN ou VERCEL_OIDC_TOKEN + BLOB_STORE_ID pour le secours",
+              "BLOB_READ_WRITE_TOKEN ou BLOB_STORE_ID + identité OIDC Vercel pour le secours",
             ],
           },
           { status: 424 },
