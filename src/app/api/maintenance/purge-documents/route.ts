@@ -1,6 +1,7 @@
 import { del, list } from "@vercel/blob";
 import { NextResponse } from "next/server";
-import { getDocumentRetentionDays, isDocumentStorageConfigured } from "@/lib/documents";
+import { isDocumentStorageConfigured } from "@/lib/document-storage";
+import { getDocumentRetentionDays } from "@/lib/documents";
 
 export const runtime = "nodejs";
 

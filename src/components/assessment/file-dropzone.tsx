@@ -1,6 +1,5 @@
 "use client";
 
-import { upload } from "@vercel/blob/client";
 import { ChangeEvent, useRef, useState } from "react";
 import { CheckIcon, LockIcon } from "@/components/ui/icons";
 import { DEFAULT_DOCUMENT_MAX_SIZE_MB, documentPathname, validatePdfSelection, type DocumentCategory, type StoredDocument } from "@/lib/documents";
@@ -17,6 +16,121 @@ type FileDropzoneProps = {
   onChange: (documents: StoredDocument[]) => void;
 };
 
+type JsonRecord = Record<string, unknown>;
+
+function record(value: unknown): JsonRecord {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as JsonRecord
+    : {};
+}
+
+async function responseJson(response: Response) {
+  try {
+    return record(await response.json());
+  } catch {
+    return {};
+  }
+}
+
+function providerFailure(payload: JsonRecord, status: number) {
+  const nested = record(payload.error);
+  const code = String(payload.providerCode || payload.code || nested.code || `HTTP_${status}`).slice(0, 80);
+  const message = typeof payload.error === "string"
+    ? payload.error
+    : typeof nested.message === "string"
+      ? nested.message
+      : "Vercel Blob a refusé le fichier.";
+  return { code, message: message.slice(0, 300) };
+}
+
+async function reportUpload(input: {
+  requestId: string;
+  sessionId: string;
+  result: "success" | "failed";
+  providerStatus: number;
+  providerCode: string;
+  message?: string;
+}) {
+  const response = await fetch("/api/uploads", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "report", ...input }),
+  });
+  return { response, payload: await responseJson(response) };
+}
+
+async function uploadPdf(file: File, uploadSessionId: string, category: DocumentCategory) {
+  const pathname = documentPathname(uploadSessionId, category, file.name);
+  const authorizationResponse = await fetch("/api/uploads", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "authorize",
+      sessionId: uploadSessionId,
+      category,
+      filename: file.name,
+      pathname,
+      contentType: file.type,
+      size: file.size,
+    }),
+  });
+  const authorization = await responseJson(authorizationResponse);
+  if (!authorizationResponse.ok || typeof authorization.uploadUrl !== "string" || typeof authorization.requestId !== "string") {
+    const failure = providerFailure(authorization, authorizationResponse.status);
+    throw new Error(`${failure.message} (code : ${failure.code})`);
+  }
+
+  const providerResponse = await fetch(authorization.uploadUrl, {
+    method: "PUT",
+    headers: { "Content-Type": "application/pdf" },
+    body: file,
+  });
+  const providerPayload = await responseJson(providerResponse);
+
+  if (!providerResponse.ok) {
+    const failure = providerFailure(providerPayload, providerResponse.status);
+    try {
+      const reported = await reportUpload({
+        requestId: authorization.requestId,
+        sessionId: uploadSessionId,
+        result: "failed",
+        providerStatus: providerResponse.status,
+        providerCode: failure.code,
+        message: failure.message,
+      });
+      const reportedFailure = providerFailure(reported.payload, reported.response.status);
+      throw new Error(`${reportedFailure.message} (code fournisseur : ${reportedFailure.code})`);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("code fournisseur")) throw error;
+      throw new Error(`${failure.message} (code fournisseur : ${failure.code})`);
+    }
+  }
+
+  const uploadedPathname = typeof providerPayload.pathname === "string" ? providerPayload.pathname : "";
+  const uploadedUrl = typeof providerPayload.url === "string" ? providerPayload.url : "";
+  if (!uploadedPathname.startsWith(`leads/${uploadSessionId}/${category}/`) || !uploadedUrl) {
+    await reportUpload({
+      requestId: authorization.requestId,
+      sessionId: uploadSessionId,
+      result: "failed",
+      providerStatus: providerResponse.status,
+      providerCode: "invalid_provider_response",
+      message: "Réponse Vercel Blob incomplète.",
+    }).catch(() => undefined);
+    throw new Error("Réponse Vercel Blob incomplète (code fournisseur : invalid_provider_response)");
+  }
+
+  await reportUpload({
+    requestId: authorization.requestId,
+    sessionId: uploadSessionId,
+    result: "success",
+    providerStatus: providerResponse.status,
+    providerCode: "ok",
+  }).catch(() => undefined);
+
+  return { pathname: uploadedPathname, url: uploadedUrl };
+}
+
 export function FileDropzone({ id, label, description, category, documents, uploadSessionId, storageConfigured, remainingSlots, onChange }: FileDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState("");
@@ -28,6 +142,7 @@ export function FileDropzone({ id, label, description, category, documents, uplo
     if (!selected.length) return;
     const validationError = validatePdfSelection(selected, remainingSlots);
     if (validationError) {
+      console.warn("upload_validation_failed", { code: "CLIENT_SELECTION_INVALID", message: validationError });
       setError(validationError);
       event.target.value = "";
       return;
@@ -39,15 +154,10 @@ export function FileDropzone({ id, label, description, category, documents, uplo
     }
 
     setUploading(true);
+    const uploaded: StoredDocument[] = [];
     try {
-      const uploaded: StoredDocument[] = [];
       for (const file of selected) {
-        const pathname = documentPathname(uploadSessionId, category, file.name);
-        const blob = await upload(pathname, file, {
-          access: "private",
-          handleUploadUrl: "/api/uploads",
-          clientPayload: JSON.stringify({ sessionId: uploadSessionId, category, filename: file.name }),
-        });
+        const blob = await uploadPdf(file, uploadSessionId, category);
         uploaded.push({
           category,
           name: file.name.slice(0, 120),
@@ -59,8 +169,11 @@ export function FileDropzone({ id, label, description, category, documents, uplo
         });
       }
       onChange([...documents, ...uploaded]);
-    } catch {
-      setError("L’envoi a échoué. Aucun document n’est présenté comme transmis. Réessayez.");
+    } catch (uploadError) {
+      if (uploaded.length > 0) onChange([...documents, ...uploaded]);
+      setError(uploadError instanceof Error
+        ? uploadError.message
+        : "L’envoi a échoué. Aucun document n’est présenté comme transmis. Réessayez.");
     } finally {
       setUploading(false);
       event.target.value = "";

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/layout/legal-page";
-import { getDocumentRetentionDays, isDocumentStorageConfigured } from "@/lib/documents";
+import { isDocumentStorageConfigured } from "@/lib/document-storage";
+import { getDocumentRetentionDays } from "@/lib/documents";
 
 export const metadata: Metadata = { title: "Politique de confidentialité", alternates: { canonical: "/confidentialite" } };
 

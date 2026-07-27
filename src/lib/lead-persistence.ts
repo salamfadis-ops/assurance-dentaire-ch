@@ -1,5 +1,5 @@
 import { put } from "@vercel/blob";
-import { isDocumentStorageConfigured } from "@/lib/documents";
+import { isDocumentStorageConfigured } from "@/lib/document-storage";
 import type { ValidatedLead } from "@/lib/lead-validation";
 
 export type LeadPersistenceAttempt = {

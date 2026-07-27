@@ -8,7 +8,7 @@ import { MobileStickyCta } from "@/components/mobile-sticky-cta";
 import { JourneyTimeline, ProtectionVisual } from "@/components/premium/product-showcase";
 import { VydaMark } from "@/components/vyda-mark";
 import { authorizedInsurers } from "@/lib/insurers";
-import { isDocumentStorageConfigured } from "@/lib/documents";
+import { isDocumentStorageConfigured } from "@/lib/document-storage";
 import {
   ArrowRightIcon,
   ChartIcon,

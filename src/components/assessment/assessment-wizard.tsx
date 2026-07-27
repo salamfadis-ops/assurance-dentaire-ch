@@ -56,6 +56,7 @@ export function AssessmentWizard({ storageConfigured }: { storageConfigured: boo
   const [restored, setRestored] = useState(false);
   const [validating, setValidating] = useState(false);
   const [result, setResult] = useState<ReturnType<typeof calculateAssessment> | null>(null);
+  const [runtimeStorageConfigured, setRuntimeStorageConfigured] = useState(storageConfigured);
 
   const progress = (step / 8) * 100;
   const timeRemaining = step <= 4 ? "moins de 2 minutes" : step <= 7 ? "moins d’1 minute" : "quelques secondes";
@@ -86,6 +87,17 @@ export function AssessmentWizard({ storageConfigured }: { storageConfigured: boo
       }
     }, 0);
     return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/uploads", { cache: "no-store", signal: controller.signal })
+      .then(async (response) => response.ok ? response.json() as Promise<{ configured?: boolean }> : null)
+      .then((configuration) => {
+        if (configuration) setRuntimeStorageConfigured(configuration.configured === true);
+      })
+      .catch(() => undefined);
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
@@ -326,10 +338,10 @@ export function AssessmentWizard({ storageConfigured }: { storageConfigured: boo
                       <h1 className="assessment-title">Transmettez les documents utiles.</h1>
                       <p className="assessment-intro">Facultatif. PDF uniquement, stockage privé et suppression automatique.</p>
                       <div className="mt-8 grid gap-4">
-                        {data.verifyGuarantees && <FileDropzone id="contract-upload" label="Ajouter mes polices d’assurance" description="Conditions, tableaux de prestations ou polices à vérifier" category="contract" documents={documents.contracts} uploadSessionId={uploadSessionId} storageConfigured={storageConfigured} remainingSlots={remainingDocumentSlots} onChange={(contracts) => setDocuments((current) => ({ ...current, contracts }))} />}
-                        <FileDropzone id="quote-upload" label="Ajouter un devis de dentiste" description="Devis ou plan de traitement à joindre au bilan" category="quote" documents={documents.quotes} uploadSessionId={uploadSessionId} storageConfigured={storageConfigured} remainingSlots={remainingDocumentSlots} onChange={(quotes) => setDocuments((current) => ({ ...current, quotes }))} />
+                        {data.verifyGuarantees && <FileDropzone id="contract-upload" label="Ajouter mes polices d’assurance" description="Conditions, tableaux de prestations ou polices à vérifier" category="contract" documents={documents.contracts} uploadSessionId={uploadSessionId} storageConfigured={runtimeStorageConfigured} remainingSlots={remainingDocumentSlots} onChange={(contracts) => setDocuments((current) => ({ ...current, contracts }))} />}
+                        <FileDropzone id="quote-upload" label="Ajouter un devis de dentiste" description="Devis ou plan de traitement à joindre au bilan" category="quote" documents={documents.quotes} uploadSessionId={uploadSessionId} storageConfigured={runtimeStorageConfigured} remainingSlots={remainingDocumentSlots} onChange={(quotes) => setDocuments((current) => ({ ...current, quotes }))} />
                       </div>
-                      {storageConfigured && <div className="mt-5 flex gap-3 rounded-2xl bg-[#e9f4ef] p-4 text-xs leading-5 text-[#29423d]"><ShieldIcon className="h-5 w-5 shrink-0 text-[#176654]" /><p>Les documents transmis sont privés, jamais exposés par une URL publique permanente, et supprimés selon la durée de conservation configurée.</p></div>}
+                      {runtimeStorageConfigured && <div className="mt-5 flex gap-3 rounded-2xl bg-[#e9f4ef] p-4 text-xs leading-5 text-[#29423d]"><ShieldIcon className="h-5 w-5 shrink-0 text-[#176654]" /><p>Les documents transmis sont privés, jamais exposés par une URL publique permanente, et supprimés selon la durée de conservation configurée.</p></div>}
                     </div>
                   )}
 

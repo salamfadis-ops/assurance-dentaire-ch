@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { AssessmentWizard } from "@/components/assessment/assessment-wizard";
-import { isDocumentStorageConfigured } from "@/lib/documents";
+import { isDocumentStorageConfigured } from "@/lib/document-storage";
 
 export const metadata: Metadata = {
   title: "Bilan Protection Dentaire gratuit",

@@ -53,9 +53,9 @@ Copier `.env.example` vers `.env.local`. Ne jamais exposer les variables serveur
 | `RESEND_FROM_EMAIL` | Adresse expéditrice obligatoire, appartenant à un domaine vérifié dans Resend |
 | `LEAD_NOTIFICATION_EMAIL` | Destinataire obligatoire des notifications de nouveaux leads |
 | `LEADS_WEBHOOK_URL` | Alternative à Resend : endpoint HTTPS du CRM |
-| `BLOB_READ_WRITE_TOKEN` | Accès au store Blob privé |
-| `VERCEL_OIDC_TOKEN` | Jeton OIDC fourni automatiquement par Vercel quand ce mode est activé |
-| `BLOB_STORE_ID` | Identifiant du store pour l’authentification OIDC |
+| `BLOB_READ_WRITE_TOKEN` | Accès au store Blob privé avec un token read-write |
+| `VERCEL_OIDC_TOKEN` | Alternative au token read-write, injectée automatiquement par Vercel quand OIDC est activé |
+| `BLOB_STORE_ID` | Identifiant du store, obligatoire avec `VERCEL_OIDC_TOKEN` |
 | `DOCUMENT_MAX_SIZE_MB` | Limite par PDF, `10` par défaut |
 | `LEAD_DOCUMENT_RETENTION_DAYS` | Conservation, `30` jours par défaut |
 | `DOCUMENT_LINK_TTL_HOURS` | Expiration des liens privés, `72` h par défaut |
@@ -74,6 +74,14 @@ Copier `.env.example` vers `.env.local`. Ne jamais exposer les variables serveur
 5. Définir un `CRON_SECRET` aléatoire. Le cron de purge est déclaré dans `vercel.json`.
 6. Ajouter `NEXT_PUBLIC_CALENDLY_URL` uniquement si le calendrier VYDA est prêt.
 7. Déployer, puis tester un lead de rappel, un bilan et un PDF de moins de 10 Mo.
+
+L’upload accepte exactement l’une de ces configurations :
+
+- `BLOB_READ_WRITE_TOKEN` ;
+- ou `VERCEL_OIDC_TOKEN` avec `BLOB_STORE_ID`.
+
+La route `/api/uploads` expose uniquement le mode disponible et les noms des
+variables absentes. Elle ne renvoie et ne journalise jamais leur valeur.
 
 Une méthode de livraison au minimum doit être configurée :
 
