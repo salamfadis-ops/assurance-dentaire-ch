@@ -49,6 +49,11 @@ async function reportUpload(input: {
   providerStatus: number;
   providerCode: string;
   message?: string;
+  pathname?: string;
+  url?: string;
+  downloadUrl?: string;
+  size?: number;
+  contentType?: string;
 }) {
   const response = await fetch("/api/uploads", {
     method: "POST",
@@ -107,7 +112,9 @@ async function uploadPdf(file: File, uploadSessionId: string, category: Document
 
   const uploadedPathname = typeof providerPayload.pathname === "string" ? providerPayload.pathname : "";
   const uploadedUrl = typeof providerPayload.url === "string" ? providerPayload.url : "";
-  if (!uploadedPathname.startsWith(`leads/${uploadSessionId}/${category}/`) || !uploadedUrl) {
+  const uploadedDownloadUrl = typeof providerPayload.downloadUrl === "string" ? providerPayload.downloadUrl : "";
+  const uploadedContentType = typeof providerPayload.contentType === "string" ? providerPayload.contentType : "";
+  if (!uploadedPathname.startsWith(`leads/${uploadSessionId}/${category}/`) || !uploadedUrl || uploadedContentType !== "application/pdf") {
     await reportUpload({
       requestId: authorization.requestId,
       sessionId: uploadSessionId,
@@ -119,15 +126,40 @@ async function uploadPdf(file: File, uploadSessionId: string, category: Document
     throw new Error("Réponse Vercel Blob incomplète (code fournisseur : invalid_provider_response)");
   }
 
-  await reportUpload({
+  console.info("blob_put_success", {
+    requestId: authorization.requestId,
+    pathname: uploadedPathname,
+    size: file.size,
+    url: uploadedUrl,
+    downloadUrl: uploadedDownloadUrl,
+  });
+
+  const verification = await reportUpload({
     requestId: authorization.requestId,
     sessionId: uploadSessionId,
     result: "success",
     providerStatus: providerResponse.status,
     providerCode: "ok",
-  }).catch(() => undefined);
+    pathname: uploadedPathname,
+    url: uploadedUrl,
+    downloadUrl: uploadedDownloadUrl,
+    size: file.size,
+    contentType: uploadedContentType,
+  });
+  if (!verification.response.ok) {
+    const failure = providerFailure(verification.payload, verification.response.status);
+    throw new Error(`${failure.message} (code fournisseur : ${failure.code})`);
+  }
+  const verifiedBlob = record(verification.payload.blob);
+  const verifiedPathname = typeof verifiedBlob.pathname === "string" ? verifiedBlob.pathname : "";
+  const verifiedUrl = typeof verifiedBlob.url === "string" ? verifiedBlob.url : "";
+  const verifiedDownloadUrl = typeof verifiedBlob.downloadUrl === "string" ? verifiedBlob.downloadUrl : "";
+  const verifiedSize = Number(verifiedBlob.size);
+  if (verifiedPathname !== uploadedPathname || !verifiedUrl || !verifiedDownloadUrl || verifiedSize !== file.size) {
+    throw new Error("La vérification serveur du PDF est incomplète (code fournisseur : invalid_verification_response)");
+  }
 
-  return { pathname: uploadedPathname, url: uploadedUrl };
+  return { pathname: verifiedPathname, url: verifiedUrl, downloadUrl: verifiedDownloadUrl, size: verifiedSize };
 }
 
 export function FileDropzone({ id, label, description, category, documents, uploadSessionId, remainingSlots, onChange }: FileDropzoneProps) {
@@ -156,7 +188,8 @@ export function FileDropzone({ id, label, description, category, documents, uplo
           name: file.name.slice(0, 120),
           pathname: blob.pathname,
           url: blob.url,
-          size: file.size,
+          downloadUrl: blob.downloadUrl,
+          size: blob.size,
           contentType: "application/pdf",
           uploadedAt: new Date().toISOString(),
         });

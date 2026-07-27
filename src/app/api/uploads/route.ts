@@ -6,6 +6,7 @@ import {
   BlobServiceRateLimited,
   BlobStoreNotFoundError,
   BlobStoreSuspendedError,
+  head,
   issueSignedToken,
   presignUrl,
 } from "@vercel/blob";
@@ -41,6 +42,11 @@ type UploadReport = {
   providerStatus?: number;
   providerCode?: string;
   message?: string;
+  pathname?: string;
+  url?: string;
+  downloadUrl?: string;
+  size?: number;
+  contentType?: string;
 };
 
 type UploadSession = {
@@ -82,6 +88,17 @@ function safeProviderMessage(value: unknown) {
     .replace(/eyJ[a-zA-Z0-9_.-]+/g, "[token-redacted]");
 }
 
+function isValidBlobUrl(value: string, sessionId: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:"
+      && url.hostname.endsWith(".blob.vercel-storage.com")
+      && url.pathname.startsWith(`/leads/${sessionId}/`);
+  } catch {
+    return false;
+  }
+}
+
 function parseAuthorization(value: unknown): UploadAuthorization {
   const source = record(value);
   const sessionId = text(source.sessionId, 80);
@@ -116,7 +133,7 @@ function parseReport(value: unknown): UploadReport {
   if (!isValidUploadSessionId(sessionId)) throw new UploadValidationError("UPLOAD_SESSION_INVALID", "Session d’upload invalide.");
   if (result !== "success" && result !== "failed") throw new UploadValidationError("UPLOAD_RESULT_INVALID", "Résultat d’upload invalide.");
 
-  return {
+  const report: UploadReport = {
     action: "report",
     requestId,
     sessionId,
@@ -124,7 +141,21 @@ function parseReport(value: unknown): UploadReport {
     providerStatus: Number.isInteger(source.providerStatus) ? Number(source.providerStatus) : undefined,
     providerCode: safeProviderCode(source.providerCode),
     message: safeProviderMessage(source.message),
+    pathname: text(source.pathname, 500) || undefined,
+    url: text(source.url, 800) || undefined,
+    downloadUrl: text(source.downloadUrl, 800) || undefined,
+    size: Number.isInteger(source.size) ? Number(source.size) : undefined,
+    contentType: text(source.contentType, 100).toLowerCase() || undefined,
   };
+
+  if (result === "success") {
+    if (!report.pathname?.startsWith(`leads/${sessionId}/`)) throw new UploadValidationError("UPLOAD_PATH_INVALID", "La clé retournée par Vercel Blob est invalide.");
+    if (!report.url || !isValidBlobUrl(report.url, sessionId)) throw new UploadValidationError("UPLOAD_PROVIDER_RESPONSE_INVALID", "La réponse Vercel Blob ne contient pas une URL valide pour cette session.");
+    if (!report.size || report.size <= 0 || report.size > getDocumentMaxSizeBytes()) throw new UploadValidationError("UPLOAD_SIZE_INVALID", "La taille retournée par Vercel Blob est invalide.");
+    if (report.contentType !== "application/pdf") throw new UploadValidationError("UPLOAD_CONTENT_TYPE_INVALID", "Le type retourné par Vercel Blob est invalide.");
+  }
+
+  return report;
 }
 
 function reserveUpload(sessionId: string, requestId: string) {
@@ -198,15 +229,68 @@ export async function POST(request: Request) {
   if (record(body).action === "report") {
     try {
       const report = parseReport(body);
-      settleUpload(report.sessionId, report.requestId, report.result === "success");
       if (report.result === "success") {
-        console.info("blob_upload_success", {
+        const storage = getDocumentStorageConfiguration();
+        if (!storage.configured) throw new UploadValidationError("BLOB_STORAGE_NOT_CONFIGURED", "Le stockage Vercel Blob n’est pas configuré.", 503);
+        console.info("blob_read_started", {
+          operation: "post_put_verification",
           requestId: report.requestId,
-          providerStatus: report.providerStatus,
-          providerCode: report.providerCode,
+          pathname: report.pathname,
+          expectedSize: report.size,
+          providerUrl: report.url,
         });
-        return NextResponse.json({ ok: true });
+        try {
+          // La réponse brute du PUT présigné peut exposer le pathname demandé
+          // alors que l'URL contient la clé physique suffixée. L'URL fournisseur
+          // est donc la source de vérité pour retrouver l'objet réellement écrit.
+          const storedBlob = await head(report.url!, {
+            ...storage.auth,
+            abortSignal: AbortSignal.timeout(10_000),
+          });
+          if (!storedBlob.pathname.startsWith(`leads/${report.sessionId}/`) || storedBlob.url !== report.url || storedBlob.size !== report.size || storedBlob.contentType !== "application/pdf") {
+            throw new UploadValidationError("BLOB_METADATA_MISMATCH", "Les métadonnées du blob stocké ne correspondent pas au retour du PUT.", 502);
+          }
+          settleUpload(report.sessionId, report.requestId, true);
+          console.info("blob_upload_success", {
+            requestId: report.requestId,
+            providerStatus: report.providerStatus,
+            providerCode: report.providerCode,
+            pathname: storedBlob.pathname,
+            size: storedBlob.size,
+            url: storedBlob.url,
+            downloadUrl: storedBlob.downloadUrl,
+          });
+          return NextResponse.json({
+            ok: true,
+            blob: {
+              pathname: storedBlob.pathname,
+              url: storedBlob.url,
+              downloadUrl: storedBlob.downloadUrl,
+              size: storedBlob.size,
+              contentType: storedBlob.contentType,
+            },
+          });
+        } catch (error) {
+          settleUpload(report.sessionId, report.requestId, false);
+          const provider = error instanceof UploadValidationError
+            ? { code: error.code, status: error.status, message: error.message }
+            : providerError(error);
+          console.error("blob_upload_failed", {
+            operation: "post_put_verification",
+            requestId: report.requestId,
+            pathname: report.pathname,
+            providerCode: provider.code,
+            message: provider.message,
+          });
+          return NextResponse.json({
+            ok: false,
+            code: "BLOB_VERIFICATION_FAILED",
+            providerCode: provider.code,
+            error: provider.message || "Le fichier n’a pas été retrouvé après le PUT.",
+          }, { status: provider.status });
+        }
       }
+      settleUpload(report.sessionId, report.requestId, false);
       console.error("blob_upload_failed", {
         requestId: report.requestId,
         providerStatus: report.providerStatus,
@@ -289,7 +373,9 @@ export async function POST(request: Request) {
       validUntil,
       allowedContentTypes: ["application/pdf"],
       maximumSizeInBytes: getDocumentMaxSizeBytes(),
-      addRandomSuffix: true,
+      // Le chemin contient déjà un UUID de session : aucun suffixe aléatoire
+      // supplémentaire n'est nécessaire et la clé retournée reste déterministe.
+      addRandomSuffix: false,
       allowOverwrite: false,
       cacheControlMaxAge: 60,
     });

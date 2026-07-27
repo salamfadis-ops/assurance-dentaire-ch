@@ -9,6 +9,7 @@ export type StoredDocument = {
   name: string;
   pathname: string;
   url: string;
+  downloadUrl: string;
   size: number;
   contentType: "application/pdf";
   uploadedAt: string;
@@ -34,7 +35,9 @@ export function getDocumentMaxSizeBytes() {
 
 export function getDocumentRetentionDays() {
   const configured = Number(process.env.LEAD_DOCUMENT_RETENTION_DAYS);
-  return Number.isFinite(configured) && configured > 0 ? Math.round(configured) : DEFAULT_DOCUMENT_RETENTION_DAYS;
+  return Number.isFinite(configured) && configured > 0
+    ? Math.max(1, Math.round(configured))
+    : DEFAULT_DOCUMENT_RETENTION_DAYS;
 }
 
 export function secureFilename(filename: string) {

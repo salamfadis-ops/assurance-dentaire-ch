@@ -72,6 +72,7 @@ function sanitizeDocuments(value: unknown, uploadSessionId: string) {
       name: clean(source.name, 120),
       pathname: clean(source.pathname, 500),
       url: clean(source.url, 800),
+      downloadUrl: clean(source.downloadUrl, 800),
       size: Number(source.size) || 0,
       contentType: "application/pdf" as const,
       uploadedAt: clean(source.uploadedAt, 40),

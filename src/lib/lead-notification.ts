@@ -1,5 +1,6 @@
-import { issueSignedToken, presignUrl } from "@vercel/blob";
+import { head, issueSignedToken, presignUrl } from "@vercel/blob";
 import { calculateAssessment, objectiveLabels } from "@/lib/dental-assessment";
+import { getDocumentStorageConfiguration } from "@/lib/document-storage";
 import { createAdvisorReport, createProspectReport } from "@/lib/dental-report";
 import type { AssessmentDocuments } from "@/lib/documents";
 import { contactPreferenceLabels } from "@/lib/lead";
@@ -23,13 +24,58 @@ async function secureDocumentLinks(lead: ValidatedLead) {
   const hours = Number.isFinite(configuredHours) && configuredHours > 0 ? configuredHours : 72;
   const validUntil = Date.now() + hours * 60 * 60 * 1000;
   const links: Array<{ name: string; url: string; expiresInHours: number }> = [];
+  const storage = getDocumentStorageConfiguration();
+  if (!storage.configured) {
+    console.error("blob_read_failed", {
+      operation: "email_link_generation",
+      requestId: lead.requestId,
+      providerCode: "credentials_missing",
+      documentCount: lead.documents.length,
+    });
+    return links;
+  }
   for (const document of lead.documents) {
+    console.info("blob_read_started", {
+      operation: "email_link_generation",
+      requestId: lead.requestId,
+      pathname: document.pathname,
+      expectedSize: document.size,
+      storedUrl: document.url,
+    });
     try {
-      const token = await issueSignedToken({ pathname: document.pathname, operations: ["get"], validUntil });
-      const { presignedUrl } = await presignUrl(token, { access: "private", operation: "get", pathname: document.pathname, validUntil, useCache: false });
+      // document.url permet aussi de retrouver les anciens uploads dont le
+      // pathname brut ne reflétait pas le suffixe aléatoire présent dans l'URL.
+      const storedBlob = await head(document.url || document.pathname, {
+        ...storage.auth,
+        abortSignal: AbortSignal.timeout(10_000),
+      });
+      if (!lead.uploadSessionId || !storedBlob.pathname.startsWith(`leads/${lead.uploadSessionId}/`) || storedBlob.size !== document.size || storedBlob.contentType !== "application/pdf") {
+        throw new Error("Blob metadata mismatch before e-mail link generation");
+      }
+      console.info("blob_read_success", {
+        operation: "email_link_generation",
+        requestId: lead.requestId,
+        pathname: storedBlob.pathname,
+        size: storedBlob.size,
+        url: storedBlob.url,
+        downloadUrl: storedBlob.downloadUrl,
+      });
+      const token = await issueSignedToken({
+        ...storage.auth,
+        pathname: storedBlob.pathname,
+        operations: ["get"],
+        validUntil,
+      });
+      const { presignedUrl } = await presignUrl(token, { access: "private", operation: "get", pathname: storedBlob.pathname, validUntil, useCache: false });
       links.push({ name: document.name, url: presignedUrl, expiresInHours: hours });
-    } catch {
-      // Le document reste privé si la création du lien temporaire échoue.
+    } catch (error) {
+      console.error("blob_read_failed", {
+        operation: "email_link_generation",
+        requestId: lead.requestId,
+        pathname: document.pathname,
+        providerCode: error instanceof Error ? error.constructor.name : "unknown_error",
+        message: error instanceof Error ? error.message.slice(0, 300) : "Unknown error",
+      });
     }
   }
   return links;
