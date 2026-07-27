@@ -10,7 +10,7 @@ export type DeliveryAttempt = {
   configured: boolean;
   delivered: boolean;
   status?: number;
-  error?: "not_configured" | "request_failed" | "provider_rejected";
+  error?: "not_configured" | "invalid_configuration" | "request_failed" | "provider_rejected";
   detail?: string;
 };
 
@@ -35,9 +35,9 @@ async function secureDocumentLinks(lead: ValidatedLead) {
   return links;
 }
 
-async function deliverWithResend(lead: ValidatedLead, apiKey: string) {
-  const to = process.env.LEAD_NOTIFICATION_EMAIL?.trim() || "contact@vyda.ch";
-  const from = process.env.RESEND_FROM_EMAIL?.trim() || "Assurance Dentaire <leads@assurance-dentaire.ch>";
+async function deliverWithResend(lead: ValidatedLead, apiKey: string, fromEmail: string, notificationEmail: string) {
+  const from = `Assurance Dentaire <${fromEmail}>`;
+  const to = [notificationEmail];
   const score = lead.score?.global;
   const links = await secureDocumentLinks(lead);
   const rows = [
@@ -75,13 +75,21 @@ async function deliverWithResend(lead: ValidatedLead, apiKey: string) {
   }
   attachments.push({ filename: "synthese-conseiller-vyda.pdf", content: Buffer.from(createAdvisorReport(lead)).toString("base64") });
 
+  // Ces adresses ne sont pas des secrets. Ce log confirme la configuration
+  // réellement utilisée sans jamais exposer RESEND_API_KEY.
+  console.info("[resend_delivery_attempt]", {
+    requestId: lead.requestId,
+    from,
+    to,
+  });
+
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json", "Idempotency-Key": lead.requestId },
     signal: AbortSignal.timeout(10_000),
     body: JSON.stringify({
       from,
-      to: [to],
+      to,
       ...(lead.contact.email ? { reply_to: lead.contact.email } : {}),
       subject: `Nouveau lead assurance-dentaire.ch — ${lead.contact.lastName} ${lead.contact.firstName} — Score ${score ?? "—"}/100`,
       html,
@@ -93,12 +101,31 @@ async function deliverWithResend(lead: ValidatedLead, apiKey: string) {
 
 export async function sendLeadNotification(lead: ValidatedLead): Promise<DeliveryAttempt> {
   const apiKey = process.env.RESEND_API_KEY?.trim();
-  if (!apiKey) {
-    return { channel: "resend", configured: false, delivered: false, error: "not_configured" };
+  const fromEmail = process.env.RESEND_FROM_EMAIL?.trim();
+  const notificationEmail = process.env.LEAD_NOTIFICATION_EMAIL?.trim();
+  const missing = [
+    ...(!apiKey ? ["RESEND_API_KEY"] : []),
+    ...(!fromEmail ? ["RESEND_FROM_EMAIL"] : []),
+    ...(!notificationEmail ? ["LEAD_NOTIFICATION_EMAIL"] : []),
+  ];
+
+  if (missing.length > 0 || !apiKey || !fromEmail || !notificationEmail) {
+    console.error("[resend_configuration_error]", {
+      message: "Envoi Resend annulé : variables d'environnement obligatoires absentes.",
+      requestId: lead.requestId,
+      missing,
+    });
+    return {
+      channel: "resend",
+      configured: false,
+      delivered: false,
+      error: "invalid_configuration",
+      detail: `Missing environment variables: ${missing.join(", ")}`,
+    };
   }
 
   try {
-    const response = await deliverWithResend(lead, apiKey);
+    const response = await deliverWithResend(lead, apiKey, fromEmail, notificationEmail);
     if (response.ok) {
       return { channel: "resend", configured: true, delivered: true, status: response.status };
     }

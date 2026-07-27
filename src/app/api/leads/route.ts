@@ -35,7 +35,10 @@ async function sendToWebhook(lead: ValidatedLead): Promise<DeliveryAttempt> {
 }
 
 function deliveryConfiguration() {
-  const resend = Boolean(process.env.RESEND_API_KEY?.trim());
+  const resendApiKey = Boolean(process.env.RESEND_API_KEY?.trim());
+  const resendFromEmail = Boolean(process.env.RESEND_FROM_EMAIL?.trim());
+  const leadNotificationEmail = Boolean(process.env.LEAD_NOTIFICATION_EMAIL?.trim());
+  const resend = resendApiKey && resendFromEmail && leadNotificationEmail;
   const webhook = Boolean(process.env.LEADS_WEBHOOK_URL?.trim());
   const blob = Boolean(process.env.BLOB_READ_WRITE_TOKEN || (process.env.VERCEL_OIDC_TOKEN && process.env.BLOB_STORE_ID));
   return {
@@ -43,7 +46,9 @@ function deliveryConfiguration() {
     webhook,
     blob,
     missing: [
-      ...(!resend ? ["RESEND_API_KEY"] : []),
+      ...(!resendApiKey ? ["RESEND_API_KEY"] : []),
+      ...(!resendFromEmail ? ["RESEND_FROM_EMAIL"] : []),
+      ...(!leadNotificationEmail ? ["LEAD_NOTIFICATION_EMAIL"] : []),
       ...(!webhook ? ["LEADS_WEBHOOK_URL"] : []),
       ...(!blob ? ["BLOB_READ_WRITE_TOKEN or VERCEL_OIDC_TOKEN + BLOB_STORE_ID"] : []),
     ],
@@ -98,7 +103,7 @@ export async function POST(request: Request) {
       console.error("[lead_delivery_failed]", {
         message: configured
           ? "Tous les canaux de livraison configurés ont échoué."
-          : "Aucun canal de livraison n'est configuré. Définir RESEND_API_KEY ou LEADS_WEBHOOK_URL.",
+          : "Aucun canal de livraison n'est configuré. Définir les trois variables Resend ou LEADS_WEBHOOK_URL.",
         requestId: validation.lead.requestId,
         journey: validation.lead.journey,
         configuration,
@@ -132,7 +137,7 @@ export async function POST(request: Request) {
             code: "LEAD_DELIVERY_NOT_CONFIGURED",
             error: "Aucun canal de livraison ni stockage de secours n’est configuré.",
             required: [
-              "RESEND_API_KEY ou LEADS_WEBHOOK_URL",
+              "RESEND_API_KEY + RESEND_FROM_EMAIL + LEAD_NOTIFICATION_EMAIL, ou LEADS_WEBHOOK_URL",
               "BLOB_READ_WRITE_TOKEN ou VERCEL_OIDC_TOKEN + BLOB_STORE_ID pour le secours",
             ],
           },

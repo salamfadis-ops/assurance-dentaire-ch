@@ -50,8 +50,8 @@ Copier `.env.example` vers `.env.local`. Ne jamais exposer les variables serveur
 | Variable | Rôle |
 | --- | --- |
 | `RESEND_API_KEY` | Clé serveur Resend. Requise si Resend est le canal de livraison |
-| `RESEND_FROM_EMAIL` | Expéditeur appartenant à un domaine vérifié dans Resend |
-| `LEAD_NOTIFICATION_EMAIL` | Destinataire des notifications de nouveaux leads |
+| `RESEND_FROM_EMAIL` | Adresse expéditrice obligatoire, appartenant à un domaine vérifié dans Resend |
+| `LEAD_NOTIFICATION_EMAIL` | Destinataire obligatoire des notifications de nouveaux leads |
 | `LEADS_WEBHOOK_URL` | Alternative à Resend : endpoint HTTPS du CRM |
 | `BLOB_READ_WRITE_TOKEN` | Accès au store Blob privé |
 | `VERCEL_OIDC_TOKEN` | Jeton OIDC fourni automatiquement par Vercel quand ce mode est activé |
@@ -68,7 +68,7 @@ Copier `.env.example` vers `.env.local`. Ne jamais exposer les variables serveur
 
 1. Importer `salamfadis-ops/assurance-dentaire-ch` dans Vercel.
 2. Définir les variables d’environnement pour Production et Preview.
-   Au moins `RESEND_API_KEY` ou `LEADS_WEBHOOK_URL` doit être présent. Le store Blob est fortement recommandé comme sauvegarde de secours.
+   Les trois variables Resend sont obligatoires pour ce canal ; `LEADS_WEBHOOK_URL` peut servir d’alternative. Le store Blob est fortement recommandé comme sauvegarde de secours.
 3. Dans **Storage**, créer un store Blob avec l’accès **Private** et le connecter au projet.
 4. Vérifier le domaine expéditeur dans Resend et renseigner `RESEND_API_KEY`, `RESEND_FROM_EMAIL` et `LEAD_NOTIFICATION_EMAIL`.
 5. Définir un `CRON_SECRET` aléatoire. Le cron de purge est déclaré dans `vercel.json`.
@@ -79,6 +79,9 @@ Une méthode de livraison au minimum doit être configurée :
 
 - Resend : `RESEND_API_KEY`, un `RESEND_FROM_EMAIL` autorisé par Resend et `LEAD_NOTIFICATION_EMAIL` ;
 - ou webhook : `LEADS_WEBHOOK_URL`.
+
+La livraison Resend n'utilise aucune adresse par défaut : si une des trois
+variables manque, elle est annulée et l'erreur de configuration est journalisée.
 
 Sans canal configuré, `/api/leads` répond avec le code explicite
 `LEAD_DELIVERY_NOT_CONFIGURED` et le statut HTTP `424`. Si un canal est configuré
